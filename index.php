@@ -1,14 +1,35 @@
 <?php
+// index.php – Main Entry Point
 
-// Enable error reporting (ALWAYS at the top)
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+session_start();
 
-// Load controller
-require_once __DIR__ . '/controllers/PatientController.php';
+// Default page
+$page = isset($_GET['page']) ? $_GET['page'] : 'login';
 
-// Create controller object
-$controller = new PatientController();
+switch ($page) {
 
-// Call function
-$controller->showProgress(1); // patient_id = 1
+    case 'patient':
+        require_once 'controllers/PatientController.php';
+        $controller = new PatientController();
+        $controller->dashboard();
+        break;
+
+    case 'doctor':
+        require_once 'controllers/DoctorController.php';
+        $controller = new DoctorController();
+        $controller->dashboard();
+        break;
+
+    case 'admin':
+        require_once 'controllers/AdminController.php';
+        $controller = new AdminController();
+        $controller->dashboard();
+        break;
+
+    case 'login':
+    default:
+        require_once 'controllers/AuthController.php';
+        $controller = new AuthController();
+        $controller->login();
+        break;
+}
