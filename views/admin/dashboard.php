@@ -12,7 +12,18 @@
     <div>
         <a href="index.php?page=adminUsers">Manage Users</a>
         <a href="index.php?page=adminHistory">Patient History</a>
-        <a href="index.php?page=manageDoctor" >Manage Doctor</a>
+        <a href="index.php?page=manageDoctor" class="card">
+        <h3>👨‍⚕️ Manage Doctors</h3>
+        <p>Add / Edit / View / Delete Doctors</p>
+    </a>
+
+    <a href="index.php?page=managePatient" class="card">
+        <h3>🧑‍🤝‍🧑 Manage Patients</h3>
+    </a>
+
+    <a href="index.php?page=manageAppointments" class="card">
+        <h3>📅 Manage Appointments</h3>
+    </a>
         <a href="index.php?page=logout">Logout</a>
 </a>
     </div>
@@ -64,7 +75,7 @@
     <ul>
         <li>
             <a href="index.php?page=adminUsers">
-                View / Manage Users
+                Manage Users
             </a>
         </li>
         <li>

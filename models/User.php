@@ -79,4 +79,29 @@ public function getDoctors()
     );
 }
 
+// =========================
+// UPDATE DOCTOR
+// =========================
+public function updateDoctor($id, $name, $email)
+{
+    $stmt = $this->db->prepare(
+        "UPDATE users SET name = ?, email = ? WHERE id = ? AND role = 'doctor'"
+    );
+    $stmt->bind_param("ssi", $name, $email, $id);
+    return $stmt->execute();
+}
+
+// =========================
+// GET DOCTOR BY ID
+// =========================
+public function getDoctorById($id)
+{
+    $stmt = $this->db->prepare(
+        "SELECT id, name, email FROM users WHERE id = ? AND role = 'doctor'"
+    );
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_assoc();
+}
+ 
 }

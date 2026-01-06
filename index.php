@@ -125,6 +125,30 @@ switch ($page) {
         $controller->addDoctor();
     break;
 
+    case 'editDoctor':
+    require_once 'controllers/AdminController.php';
+    (new AdminController())->editDoctor();
+    break;
+
+case 'deleteDoctor':
+    require_once 'controllers/AdminController.php';
+    (new AdminController())->deleteDoctor();
+    break;
+case 'addDoctor':
+    require_once 'controllers/AdminController.php';
+    (new AdminController())->addDoctor();
+    break;
+
+case 'editDoctor':
+    require_once 'controllers/AdminController.php';
+    (new AdminController())->editDoctor();
+    break;
+
+case 'deleteDoctor':
+    require_once 'controllers/AdminController.php';
+    (new AdminController())->deleteDoctor();
+    break;
+
         case 'login':
         $controller = new AuthController();
         $controller->login();
@@ -143,4 +167,19 @@ switch ($page) {
     default:
         echo "<h2 style='text-align:center'>Page not found</h2>";
         break;
+
+        $page = $_GET['page'] ?? 'login';
+
+switch ($page) {
+    case 'login':
+        (new AuthController())->login();
+        break;
+
+    case 'register':
+        (new AuthController())->register();
+        break;
+
+    default:
+        echo "<h2>Page not found</h2>";
+}
 }

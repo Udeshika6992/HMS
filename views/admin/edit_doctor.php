@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Add Doctor</title>
+    <title>Edit Doctor</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
 <div class="navbar">
-    <h2>Admin Panel</h2>
+    <h2>Edit Doctor</h2>
     <div>
         <a href="index.php?page=manageDoctors">Back</a>
         <a href="index.php?page=logout">Logout</a>
@@ -15,7 +15,7 @@
 </div>
 
 <div class="card">
-    <h2>Add New Doctor</h2>
+    <h2>Edit Doctor Details</h2>
 
     <?php if (!empty($error)): ?>
         <p style="color:red;"><?= $error ?></p>
@@ -23,15 +23,12 @@
 
     <form method="post">
         <label>Doctor Name</label>
-        <input type="text" name="name" required>
+        <input type="text" name="name" value="<?= htmlspecialchars($doctor['name']) ?>" required>
 
         <label>Email</label>
-        <input type="email" name="email" required>
+        <input type="email" name="email" value="<?= htmlspecialchars($doctor['email']) ?>" required>
 
-        <label>Password</label>
-        <input type="text" name="password" required>
-
-        <button type="submit" class="btn">Create Doctor</button>
+        <button type="submit" class="btn">Update Doctor</button>
     </form>
 </div>
 
