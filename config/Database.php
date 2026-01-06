@@ -1,33 +1,21 @@
 <?php
+class Database {
+    private $host = "localhost";
+    private $db_name = "hms_db";
+    private $username = "root";
+    private $password = "";
+    public $conn;
 
-class Database
-{
-    private static $host = "localhost";
-    private static $user = "root";
-    private static $pass = "";
-    private static $dbname = "hms_db";
-
-    private static $conn = null;
-
-    // =========================
-    // CREATE DATABASE CONNECTION
-    // =========================
-    public static function connect()
-    {
-        if (self::$conn === null) {
-            self::$conn = new mysqli(
-                self::$host,
-                self::$user,
-                self::$pass,
-                self::$dbname
-            );
-
-            // Check connection
-            if (self::$conn->connect_error) {
-                die("Database Connection Failed: " . self::$conn->connect_error);
-            }
+    public function connect() {
+        $this->conn = null;
+        try {
+            $this->conn = new PDO("mysql:host={$this->host};dbname={$this->db_name}", $this->username, $this->password);
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch(PDOException $e) {
+            echo "Connection error: " . $e->getMessage();
         }
-
-        return self::$conn;
+        return $this->conn;
     }
 }
+
+?>
