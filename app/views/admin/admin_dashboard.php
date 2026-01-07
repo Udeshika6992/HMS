@@ -1,10 +1,13 @@
 <?php
-// ✅ Secure session check
 session_start();
+
+// ✅ Only admin can access
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-    header('Location: ../auth/login.php');
+    header("Location: ../auth/login.php");
     exit;
 }
+
+$admin = $_SESSION['user'];
 ?>
 
 <!DOCTYPE html>
@@ -24,11 +27,12 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
   <!-- ✅ Sidebar -->
   <div class="sidebar">
     <h2>HMS Admin</h2>
-    <a href="dashboard.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="admin_dashboard.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
     <a href="manage_admins.php"><i class="bi bi-person-gear"></i> Manage Admins</a>
     <a href="manage_doctors.php"><i class="bi bi-person-badge"></i> Manage Doctors</a>
+    <a href="manage_departments.php"><i class="bi bi-calendar-check"></i> Manage Departments</a>
     <a href="manage_patients.php"><i class="bi bi-person"></i> Manage Patients</a>
-    <a href="appointments.php"><i class="bi bi-calendar-check"></i> Appointments</a>
+    <a href="manage_appointments.php"><i class="bi bi-calendar-check"></i> Appointments</a>
     <a href="reports.php"><i class="bi bi-bar-chart"></i> Reports</a>
     <a href="../auth/logout.php" class="btn btn-danger w-100 mt-4"><i class="bi bi-box-arrow-right"></i> Logout</a>
   </div>

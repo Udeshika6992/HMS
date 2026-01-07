@@ -1,114 +1,167 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+/**
+ * -----------------------------------------------------------
+ * User.php (Model Layer)
+ * -----------------------------------------------------------
+ * Handles user operations (plain-text version for campus demo)
+ * -----------------------------------------------------------
+ */
+
+require_once __DIR__ . '/Database.php';
 
 class User {
-    // Database connection
-    public $conn; // ✅ Made public so it can be accessed from manage_admins.php
-    private $table = "users";
+    private $conn;
 
     public function __construct() {
-        $database = new Database();
-        $this->conn = $database->connect();
+        $this->conn = Database::getInstance()->connect();
     }
 
-    // ✅ Register new patient user
+    public function getConnection() {
+    return $this->conn;
+}
+//ADD ADMIN//
+
+    public function addAdmin($name, $email, $password) {
+    $query = $this->conn->prepare("
+        INSERT INTO users (name, email, password, role)
+        VALUES (:name, :email, :password, 'admin')
+    ");
+    $query->bindParam(':name', $name);
+    $query->bindParam(':email', $email);
+    $query->bindParam(':password', $password);
+    return $query->execute();
+}
+
+    // -------------------------------------------------------------------
+    // 🔹 REGISTER (Patient Only)
+    // -------------------------------------------------------------------
     public function register($name, $email, $password) {
-        // Check if email exists
-        $checkQuery = "SELECT * FROM $this->table WHERE email = :email LIMIT 1";
-        $checkStmt = $this->conn->prepare($checkQuery);
-        $checkStmt->execute([':email' => $email]);
-        if ($checkStmt->rowCount() > 0) {
-            return false;
+        // Check if email already exists
+        $check = $this->conn->prepare("SELECT * FROM users WHERE email = :email");
+        $check->bindParam(':email', $email);
+        $check->execute();
+
+        if ($check->rowCount() > 0) {
+            return false; // Email already exists
         }
 
-        $hashedPassword = md5($password);
-        $role = 'patient';
+        // 🚫 No hashing here — store as plain text
+        $stmt = $this->conn->prepare("
+            INSERT INTO users (name, email, password, role)
+            VALUES (:name, :email, :password, 'patient')
+        ");
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':password', $password);
 
-        $query = "INSERT INTO $this->table (name, email, password, role)
-                  VALUES (:name, :email, :password, :role)";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([
-            ':name' => $name,
-            ':email' => $email,
-            ':password' => $hashedPassword,
-            ':role' => $role
-        ]);
-
-        return true;
+        return $stmt->execute();
     }
 
-    // ✅ Login for all roles (admin, doctor, patient)
+    // -------------------------------------------------------------------
+    // 🔹 LOGIN (Admin, Doctor, Patient)
+    // -------------------------------------------------------------------
     public function login($email, $password) {
-        $query = "SELECT * FROM $this->table WHERE email = :email AND password = :password LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([
-            ':email' => $email,
-            ':password' => md5($password)
-        ]);
+        $stmt = $this->conn->prepare("
+            SELECT * FROM users 
+            WHERE email = :email AND password = :password
+        ");
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':password', $password);
+        $stmt->execute();
+
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // ✅ Find user by email (used in forgot password)
+    // -------------------------------------------------------------------
+    // 🔹 FIND USER BY EMAIL
+    // -------------------------------------------------------------------
     public function findUserByEmail($email) {
-        $query = "SELECT * FROM $this->table WHERE email = :email LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([':email' => $email]);
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE email = :email");
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // ✅ Update password (used in reset password)
+    // -------------------------------------------------------------------
+    // 🔹 UPDATE PASSWORD
+    // -------------------------------------------------------------------
     public function updatePassword($email, $newPassword) {
-        $hashed = md5($newPassword);
-        $query = "UPDATE $this->table SET password = :password WHERE email = :email";
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([
-            ':password' => $hashed,
-            ':email' => $email
-        ]);
+        $stmt = $this->conn->prepare("
+            UPDATE users SET password = :password WHERE email = :email
+        ");
+        $stmt->bindParam(':password', $newPassword);
+        $stmt->bindParam(':email', $email);
+        return $stmt->execute();
     }
 
-    // ✅ Get all users (for admin)
+    // -------------------------------------------------------------------
+    // 🔹 GET ALL USERS
+    // -------------------------------------------------------------------
     public function getAllUsers() {
-        $query = "SELECT id, name, email, role, created_at FROM $this->table ORDER BY id DESC";
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare("SELECT * FROM users ORDER BY id DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // ✅ Delete user by ID
+    // -------------------------------------------------------------------
+    // 🔹 DELETE USER
+    // -------------------------------------------------------------------
     public function deleteUser($id) {
-        $query = "DELETE FROM $this->table WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([':id' => $id]);
+        $stmt = $this->conn->prepare("DELETE FROM users WHERE id = :id");
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
     }
 
-    // ✅ Update user details (for editing)
-    public function updateUser($id, $name, $email) {
-        $query = "UPDATE $this->table SET name = :name, email = :email WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([
-            ':name' => $name,
-            ':email' => $email,
-            ':id' => $id
-        ]);
+    // -------------------------------------------------------------------
+    // 🔹 UPDATE USER DETAILS
+    // -------------------------------------------------------------------
+    public function updateUser($id, $name, $email, $role) {
+        $stmt = $this->conn->prepare("
+            UPDATE users SET name = :name, email = :email, role = :role WHERE id = :id
+        ");
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':role', $role);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
     }
 
-    // ✅ Add new admin (used in Manage Admins)
-    public function addAdmin($name, $email, $password) {
-        $hashed = md5($password);
-        $query = "INSERT INTO $this->table (name, email, password, role)
-                  VALUES (:name, :email, :password, 'admin')";
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([
-            ':name' => $name,
-            ':email' => $email,
-            ':password' => $hashed
-        ]);
+    // -------------------------------------------------------------------
+    // 🔹 GET USER BY ID
+    // -------------------------------------------------------------------
+    public function getUserById($id) {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE id = :id");
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // ✅ Get database connection (optional getter)
-    public function getConnection() {
-        return $this->conn;
+    // -------------------------------------------------------------------
+    // 🔹 FACTORY PATTERN (Create User by Role)
+    // -------------------------------------------------------------------
+    public static function createUser($role, $name, $email, $password) {
+        $userModel = new User();
+
+        $stmt = $userModel->conn->prepare("
+            INSERT INTO users (name, email, password, role)
+            VALUES (:name, :email, :password, :role)
+        ");
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':password', $password);
+        $stmt->bindParam(':role', $role);
+
+        return $stmt->execute();
+        
     }
+
+    public function generatePatientCode() {
+    $stmt = $this->conn->prepare("SELECT MAX(id) AS max_id FROM users WHERE role = 'patient'");
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $nextId = $result['max_id'] ? $result['max_id'] + 1 : 1;
+    return "P" . str_pad($nextId, 6, "0", STR_PAD_LEFT);
+}
 }
 ?>

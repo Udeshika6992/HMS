@@ -1,21 +1,25 @@
 <?php
-class Database {
-    private $host = "localhost";
-    private $db_name = "hms_db";
-    private $username = "root";
-    private $password = "";
-    public $conn;
+/**
+ * -----------------------------------------------------------
+ * config/database.php
+ * -----------------------------------------------------------
+ * This file stores database connection settings.
+ * These constants are used by app/models/Database.php
+ * -----------------------------------------------------------
+ */
 
-    public function connect() {
-        $this->conn = null;
-        try {
-            $this->conn = new PDO("mysql:host={$this->host};dbname={$this->db_name}", $this->username, $this->password);
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch(PDOException $e) {
-            echo "Connection error: " . $e->getMessage();
-        }
-        return $this->conn;
-    }
-}
+// ✅ Database Host (usually localhost in XAMPP)
+define('DB_HOST', 'localhost');
 
+// ✅ Database Name (make sure this matches your MySQL database)
+define('DB_NAME', 'hms_db');
+
+// ✅ MySQL Username (default in XAMPP is root)
+define('DB_USER', 'root');
+
+// ✅ MySQL Password (default is empty)
+define('DB_PASS', '');
+
+// ✅ Optional: Character Set
+define('DB_CHARSET', 'utf8mb4');
 ?>
