@@ -1,0 +1,21 @@
+{
+    "php.suggest.basic": false,
+    "php.validate.enable": true,
+    "php.validate.executablePath": "C:/xampp/php/php.exe",
+    "php.suggest.autoRootNamespaces": false,
+    "files.associations": {
+        "*.php": "php"
+    },
+    "intelephense.files.maxSize": 5000000,
+    "intelephense.environment.includePaths": [
+        "C:/xampp/htdocs/HMS/config",
+        "C:/xampp/htdocs/HMS/core",
+        "C:/xampp/htdocs/HMS/models",
+        "C:/xampp/htdocs/HMS/controllers",
+        "C:/xampp/htdocs/HMS/middleware",
+        "C:/xampp/htdocs/HMS/includes"
+    ],
+    "intelephense.files.associations": [
+        "*.php"
+    ]
+}

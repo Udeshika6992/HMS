@@ -1,1090 +1,1145 @@
 <?php
+/**
+ * Admin Controller
+ */
 
-require_once __DIR__ . '/../core/Controller.php';
-require_once __DIR__ . '/../models/User.php';
-require_once __DIR__ . '/../models/Patient.php';
-require_once __DIR__ . '/../models/Doctor.php';
-require_once __DIR__ . '/../models/Admin.php';
-require_once __DIR__ . '/../models/Appointment.php';
-require_once __DIR__ . '/../models/Department.php';
-require_once __DIR__ . '/../models/Progress.php';
-require_once __DIR__ . '/../models/Report.php';
-require_once __DIR__ . '/../patterns/factory/UserFactory.php';
-
-class AdminController extends Controller
-{
-    /**
-     * @var User $userModel
-     */
+class AdminController extends Controller {
+    
     private $userModel;
-    
-    /**
-     * @var Patient $patientModel
-     */
-    private $patientModel;
-    
-    /**
-     * @var Doctor $doctorModel
-     */
     private $doctorModel;
-    
-    /**
-     * @var Admin $adminModel
-     */
-    private $adminModel;
-    
-    /**
-     * @var Appointment $appointmentModel
-     */
+    private $patientModel;
     private $appointmentModel;
-    
-    /**
-     * @var Department $departmentModel
-     */
     private $departmentModel;
+    private $settingModel;
     
-    /**
-     * @var Progress $progressModel
-     */
-    private $progressModel;
-    
-    /**
-     * @var Report $reportModel
-     */
-    private $reportModel;
-    
-    /**
-     * @var UserFactory $userFactory
-     */
-    private $userFactory;
-    
-    /**
-     * Constructor - Initialize models and check authentication
-     */
-    public function __construct()
-    {
+    public function __construct() {
         parent::__construct();
         
-        // Initialize models
-        $this->userModel = new User();
-        $this->patientModel = new Patient();
-        $this->doctorModel = new Doctor();
-        $this->adminModel = new Admin();
-        $this->appointmentModel = new Appointment();
-        $this->departmentModel = new Department();
-        $this->progressModel = new Progress();
-        $this->reportModel = new Report();
-        $this->userFactory = new UserFactory();
-        
         // Check if user is logged in and is admin
-        $this->checkAdminAuth();
-    }
-    
-    /**
-     * Check if current user is authenticated as admin
-     */
-    private function checkAdminAuth()
-    {
-        // Start session if not already started
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        
-        // Check if user is logged in
-        if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role'])) {
-            $this->setFlash('error', 'Please login to access admin panel');
-            $this->redirect('/auth/login');
+        if (!$this->isLoggedIn() || $this->getCurrentUserRole() !== 'admin') {
+            $this->setFlash('Please login to access this page', 'error');
+            $this->redirect('login');
             return;
         }
         
-        // Check if user is admin
-        if ($_SESSION['user_role'] !== 'admin') {
-            $this->setFlash('error', 'You do not have permission to access admin panel');
-            
-            // Redirect based on role
-            switch ($_SESSION['user_role']) {
-                case 'doctor':
-                    $this->redirect('/doctor/dashboard');
-                    break;
-                case 'patient':
-                    $this->redirect('/patient/dashboard');
-                    break;
-                default:
-                    $this->redirect('/auth/login');
-            }
-            return;
-        }
+        // Load models
+        require_once 'models/UserModel.php';
+        require_once 'models/DoctorModel.php';
+        require_once 'models/PatientModel.php';
+        require_once 'models/AppointmentModel.php';
+        require_once 'models/DepartmentModel.php';
+        require_once 'models/SettingModel.php';
+        
+        $this->userModel = new UserModel();
+        $this->doctorModel = new DoctorModel();
+        $this->patientModel = new PatientModel();
+        $this->appointmentModel = new AppointmentModel();
+        $this->departmentModel = new DepartmentModel();
+        $this->settingModel = new SettingModel();
     }
-    
-    /**
-     * ========================================
-     * DASHBOARD METHODS
-     * ========================================
-     */
-    
+
     /**
      * Admin Dashboard
-     * Shows statistics and overview
      */
-    public function dashboard()
-    {
-        try {
-            // Get statistics
-            $stats = [
-                'total_admins' => $this->adminModel->count(),
-                'total_doctors' => $this->doctorModel->count(),
-                'total_patients' => $this->patientModel->count(),
-                'total_appointments' => $this->appointmentModel->count(),
-                'total_departments' => $this->departmentModel->count(),
-                'today_appointments' => $this->appointmentModel->countByDate(date('Y-m-d')),
-                'pending_appointments' => $this->appointmentModel->countByStatus('pending'),
-                'completed_appointments' => $this->appointmentModel->countByStatus('completed')
-            ];
-            
-            // Get recent appointments
-            $recentAppointments = $this->appointmentModel->getRecentAppointments(5);
-            
-            // Get recent patients
-            $recentPatients = $this->patientModel->getRecentPatients(5);
-            
-            // Get appointment statistics for chart
-            $appointmentStats = $this->appointmentModel->getWeeklyStats();
-            
-            $data = [
-                'stats' => $stats,
-                'recentAppointments' => $recentAppointments,
-                'recentPatients' => $recentPatients,
-                'appointmentStats' => $appointmentStats,
-                'pageTitle' => 'Admin Dashboard',
-                'currentPage' => 'dashboard'
-            ];
-            
-            $this->view('admin/dashboard', $data);
-            
-        } catch (Exception $e) {
-            error_log("Admin Dashboard Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error loading dashboard: ' . $e->getMessage());
-            $this->view('admin/dashboard', ['pageTitle' => 'Admin Dashboard']);
-        }
+    public function dashboard() {
+        // Get statistics
+        $stats = [
+            'total_users' => $this->userModel->count(),
+            'total_doctors' => $this->userModel->count("role = 'doctor'"),
+            'total_patients' => $this->userModel->count("role = 'patient'"),
+            'total_appointments' => $this->appointmentModel->count(),
+            'today_appointments' => $this->appointmentModel->count(
+                "appointment_date = CURDATE() AND status NOT IN ('cancelled', 'no_show')"
+            ),
+            'total_departments' => $this->departmentModel->count("is_active = 1"),
+            'recent_users' => $this->userModel->getRecent(5),
+            'recent_appointments' => $this->appointmentModel->getByDateRange(
+                date('Y-m-d', strtotime('-7 days')),
+                date('Y-m-d')
+            )
+        ];
+
+        $data = [
+            'title' => 'Admin Dashboard',
+            'stats' => $stats
+        ];
+
+        $this->render('admin/dashboard', $data, 'admin-layout');
     }
-    
+
     /**
-     * ========================================
-     * ADMIN MANAGEMENT METHODS
-     * ========================================
+     * User Management
      */
-    
-    /**
-     * Manage Admins - List all admins
-     */
-    public function manageAdmins()
-    {
-        try {
-            // Get all admins
-            $admins = $this->adminModel->getAllAdmins();
-            
-            $data = [
-                'admins' => $admins,
-                'pageTitle' => 'Manage Admins',
-                'currentPage' => 'admins'
-            ];
-            
-            $this->view('admin/manage_admins', $data);
-            
-        } catch (Exception $e) {
-            error_log("Manage Admins Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error loading admins: ' . $e->getMessage());
-            $this->redirect('/admin/dashboard');
-        }
-    }
-    
-    /**
-     * Add new admin
-     */
-    public function addAdmin()
-    {
-        if (!$this->isPost()) {
-            $this->redirect('/admin/manage-admins');
-            return;
-        }
+    public function users() {
+        $page = (int)($this->get('page', 1));
+        $search = $this->get('search');
+        $role = $this->get('role');
         
-        try {
-            $data = $this->getPostData();
+        if ($search) {
+            $users = $this->userModel->search($search);
+            $total = count($users);
+            $pagination = $this->getPaginationData($total, $page, 10);
+            $users = array_slice($users, $pagination['offset'], $pagination['per_page']);
+        } else {
+            $result = $this->userModel->paginate($page, 10);
+            $users = $result['data'] ?? [];
+            $pagination = [
+                'total' => $result['total'] ?? 0,
+                'page' => $page,
+                'per_page' => 10,
+                'total_pages' => $result['total_pages'] ?? 1,
+                'has_previous' => $page > 1,
+                'has_next' => $page < ($result['total_pages'] ?? 1),
+                'previous_page' => $page - 1,
+                'next_page' => $page + 1,
+                'offset' => ($page - 1) * 10
+            ];
+        }
+
+        $data = [
+            'title' => 'User Management',
+            'users' => $users,
+            'pagination' => $pagination,
+            'search' => $search,
+            'role' => $role
+        ];
+
+        $this->render('admin/users', $data, 'admin-layout');
+    }
+
+    /**
+     * Create User Form
+     */
+    public function createUser() {
+        if ($this->isPost()) {
+            // Get CSRF token from POST
+            $csrfToken = $this->post('csrf_token');
             
-            // Validate required fields
-            $errors = $this->validateRequired($data, ['name', 'email', 'password', 'confirm_password']);
-            
-            if (!empty($errors)) {
-                $this->setFlash('error', implode('<br>', $errors));
-                $this->redirect('/admin/manage-admins');
+            // Validate CSRF token
+            if (!$this->validateCsrf($csrfToken)) {
+                $this->setFlash('Invalid security token. Please try again.', 'error');
+                $this->redirect('admin/users/create');
                 return;
             }
-            
-            // Validate email format
+
+            $data = [
+                'username' => $this->post('username'),
+                'email' => $this->post('email'),
+                'password' => $this->post('password'),
+                'confirm_password' => $this->post('confirm_password'),
+                'full_name' => $this->post('full_name'),
+                'phone' => $this->post('phone'),
+                'address' => $this->post('address'),
+                'role' => $this->post('role')
+            ];
+
+            // Validate
+            $errors = [];
+
+            if (strlen($data['username']) < 3) {
+                $errors[] = 'Username must be at least 3 characters';
+            }
             if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $this->setFlash('error', 'Invalid email format');
-                $this->redirect('/admin/manage-admins');
-                return;
+                $errors[] = 'Invalid email format';
             }
-            
-            // Check if passwords match
+            if (strlen($data['password']) < 6) {
+                $errors[] = 'Password must be at least 6 characters';
+            }
             if ($data['password'] !== $data['confirm_password']) {
-                $this->setFlash('error', 'Passwords do not match');
-                $this->redirect('/admin/manage-admins');
-                return;
+                $errors[] = 'Passwords do not match';
             }
-            
-            // Check password strength
-            if (strlen($data['password']) < PASSWORD_MIN_LENGTH) {
-                $this->setFlash('error', 'Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters');
-                $this->redirect('/admin/manage-admins');
-                return;
+            if (empty($data['full_name'])) {
+                $errors[] = 'Full name is required';
             }
-            
-            // Check if email already exists
-            $existingUser = $this->userModel->findByEmail($data['email']);
-            if ($existingUser) {
-                $this->setFlash('error', 'Email already exists');
-                $this->redirect('/admin/manage-admins');
-                return;
+
+            // Check if username exists
+            if ($this->userModel->findByUsername($data['username'])) {
+                $errors[] = 'Username already taken';
             }
-            
-            // Prepare data for factory
-            $userData = [
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => $data['password'],
-                'role' => 'admin'
-            ];
-            
-            // Create admin using factory
-            $result = $this->userFactory->create($userData);
-            
-            if ($result) {
-                $this->setFlash('success', 'Admin added successfully!');
-                
-                // Log the action
-                $this->logAction('add_admin', "Added admin: {$data['email']}");
-            } else {
-                $this->setFlash('error', 'Failed to add admin');
-            }
-            
-            $this->redirect('/admin/manage-admins');
-            
-        } catch (Exception $e) {
-            error_log("Add Admin Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error adding admin: ' . $e->getMessage());
-            $this->redirect('/admin/manage-admins');
-        }
-    }
-    
-    /**
-     * Update admin
-     * @param int $id Admin ID
-     */
-    public function updateAdmin($id)
-    {
-        if (!$this->isPost()) {
-            $this->redirect('/admin/manage-admins');
-            return;
-        }
-        
-        try {
-            $data = $this->getPostData();
-            
-            // Validate required fields
-            $errors = $this->validateRequired($data, ['name', 'email']);
-            
-            if (!empty($errors)) {
-                $this->setFlash('error', implode('<br>', $errors));
-                $this->redirect('/admin/manage-admins');
-                return;
-            }
-            
-            // Validate email format
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $this->setFlash('error', 'Invalid email format');
-                $this->redirect('/admin/manage-admins');
-                return;
-            }
-            
-            // Check if email exists for another user
-            $existingUser = $this->userModel->findByEmail($data['email']);
-            if ($existingUser && $existingUser['id'] != $id) {
-                $this->setFlash('error', 'Email already exists for another user');
-                $this->redirect('/admin/manage-admins');
-                return;
-            }
-            
-            // Prepare update data
-            $updateData = [
-                'name' => $data['name'],
-                'email' => $data['email']
-            ];
-            
-            // Update password if provided
-            if (!empty($data['password'])) {
-                if ($data['password'] !== $data['confirm_password']) {
-                    $this->setFlash('error', 'Passwords do not match');
-                    $this->redirect('/admin/manage-admins');
-                    return;
-                }
-                
-                if (strlen($data['password']) < PASSWORD_MIN_LENGTH) {
-                    $this->setFlash('error', 'Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters');
-                    $this->redirect('/admin/manage-admins');
-                    return;
-                }
-                
-                $updateData['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-            }
-            
-            // Update admin
-            $result = $this->adminModel->updateAdmin($id, $updateData);
-            
-            if ($result) {
-                $this->setFlash('success', 'Admin updated successfully!');
-                
-                // Log the action
-                $this->logAction('update_admin', "Updated admin ID: {$id}");
-            } else {
-                $this->setFlash('error', 'Failed to update admin');
-            }
-            
-            $this->redirect('/admin/manage-admins');
-            
-        } catch (Exception $e) {
-            error_log("Update Admin Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error updating admin: ' . $e->getMessage());
-            $this->redirect('/admin/manage-admins');
-        }
-    }
-    
-    /**
-     * Delete admin
-     * @param int $id Admin ID
-     */
-    public function deleteAdmin($id)
-    {
-        try {
-            // Prevent deleting yourself
-            if ($id == $_SESSION['user_id']) {
-                $this->setFlash('error', 'You cannot delete your own account');
-                $this->redirect('/admin/manage-admins');
-                return;
-            }
-            
-            // Check if admin exists
-            $admin = $this->adminModel->find($id);
-            if (!$admin) {
-                $this->setFlash('error', 'Admin not found');
-                $this->redirect('/admin/manage-admins');
-                return;
-            }
-            
-            // Delete admin
-            $result = $this->adminModel->deleteAdmin($id);
-            
-            if ($result) {
-                $this->setFlash('success', 'Admin deleted successfully!');
-                
-                // Log the action
-                $this->logAction('delete_admin', "Deleted admin ID: {$id}, Email: {$admin['email']}");
-            } else {
-                $this->setFlash('error', 'Failed to delete admin');
-            }
-            
-            $this->redirect('/admin/manage-admins');
-            
-        } catch (Exception $e) {
-            error_log("Delete Admin Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error deleting admin: ' . $e->getMessage());
-            $this->redirect('/admin/manage-admins');
-        }
-    }
-    
-    /**
-     * ========================================
-     * DOCTOR MANAGEMENT METHODS
-     * ========================================
-     */
-    
-    /**
-     * Manage Doctors - List all doctors
-     */
-    public function manageDoctors()
-    {
-        try {
-            // Get all doctors with details
-            $doctors = $this->doctorModel->getAllDoctors();
-            
-            // Get departments for dropdown
-            $departments = $this->departmentModel->all();
-            
-            $data = [
-                'doctors' => $doctors,
-                'departments' => $departments,
-                'pageTitle' => 'Manage Doctors',
-                'currentPage' => 'doctors'
-            ];
-            
-            $this->view('admin/manage_doctors', $data);
-            
-        } catch (Exception $e) {
-            error_log("Manage Doctors Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error loading doctors: ' . $e->getMessage());
-            $this->redirect('/admin/dashboard');
-        }
-    }
-    
-    /**
-     * Add new doctor
-     */
-    public function addDoctor()
-    {
-        if (!$this->isPost()) {
-            $this->redirect('/admin/manage-doctors');
-            return;
-        }
-        
-        try {
-            $data = $this->getPostData();
-            
-            // Validate required fields
-            $errors = $this->validateRequired($data, [
-                'name', 'email', 'password', 'confirm_password', 
-                'specialization', 'department_id'
-            ]);
-            
-            if (!empty($errors)) {
-                $this->setFlash('error', implode('<br>', $errors));
-                $this->redirect('/admin/manage-doctors');
-                return;
-            }
-            
-            // Validate email
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $this->setFlash('error', 'Invalid email format');
-                $this->redirect('/admin/manage-doctors');
-                return;
-            }
-            
-            // Check passwords match
-            if ($data['password'] !== $data['confirm_password']) {
-                $this->setFlash('error', 'Passwords do not match');
-                $this->redirect('/admin/manage-doctors');
-                return;
-            }
-            
-            // Check password strength
-            if (strlen($data['password']) < PASSWORD_MIN_LENGTH) {
-                $this->setFlash('error', 'Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters');
-                $this->redirect('/admin/manage-doctors');
-                return;
-            }
-            
+
             // Check if email exists
-            $existingUser = $this->userModel->findByEmail($data['email']);
-            if ($existingUser) {
-                $this->setFlash('error', 'Email already exists');
-                $this->redirect('/admin/manage-doctors');
+            if ($this->userModel->findByEmail($data['email'])) {
+                $errors[] = 'Email already registered';
+            }
+
+            if (!empty($errors)) {
+                $_SESSION['form_errors'] = $errors;
+                $_SESSION['form_data'] = $data;
+                $this->setFlash('Please correct the errors below', 'error');
+                $this->redirect('admin/users/create');
                 return;
             }
-            
-            // Prepare data for factory
-            $userData = [
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => $data['password'],
-                'role' => 'doctor',
-                'specialization' => $data['specialization'],
-                'qualification' => $data['qualification'] ?? '',
-                'experience' => $data['experience'] ?? 0,
-                'department_id' => $data['department_id'],
-                'available_days' => $data['available_days'] ?? 'Monday,Tuesday,Wednesday,Thursday,Friday',
-                'available_time_start' => $data['available_time_start'] ?? '09:00:00',
-                'available_time_end' => $data['available_time_end'] ?? '17:00:00'
-            ];
-            
-            // Create doctor using factory
-            $result = $this->userFactory->create($userData);
-            
-            if ($result) {
-                $this->setFlash('success', 'Doctor added successfully!');
-                
-                // Log the action
-                $this->logAction('add_doctor', "Added doctor: {$data['email']}");
+
+            // Create user
+            $userId = $this->userModel->createUser($data);
+
+            if ($userId) {
+                // Create role-specific record
+                if ($data['role'] === 'doctor') {
+                    $doctorData = [
+                        'user_id' => $userId,
+                        'specialization' => $this->post('specialization'),
+                        'qualification' => $this->post('qualification'),
+                        'experience_years' => (int)$this->post('experience_years'),
+                        'license_number' => $this->post('license_number'),
+                        'department_id' => $this->post('department_id') ?: null,
+                        'available_days' => 'Mon,Tue,Wed,Thu,Fri',
+                        'available_time_start' => '09:00:00',
+                        'available_time_end' => '17:00:00',
+                        'max_patients_per_day' => 20,
+                        'is_available' => 1
+                    ];
+                    $this->doctorModel->create($doctorData);
+                } elseif ($data['role'] === 'patient') {
+                    $patientData = [
+                        'user_id' => $userId,
+                        'registration_date' => date('Y-m-d')
+                    ];
+                    $this->patientModel->create($patientData);
+                }
+
+                $this->logActivity('create_user', 'users', $userId);
+                $this->setFlash('User created successfully', 'success');
+                $this->redirect('admin/users');
             } else {
-                $this->setFlash('error', 'Failed to add doctor');
+                $this->setFlash('Failed to create user', 'error');
+                $this->redirect('admin/users/create');
             }
-            
-            $this->redirect('/admin/manage-doctors');
-            
-        } catch (Exception $e) {
-            error_log("Add Doctor Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error adding doctor: ' . $e->getMessage());
-            $this->redirect('/admin/manage-doctors');
-        }
-    }
-    
-    /**
-     * Update doctor
-     * @param int $id Doctor ID
-     */
-    public function updateDoctor($id)
-    {
-        if (!$this->isPost()) {
-            $this->redirect('/admin/manage-doctors');
             return;
         }
+
+        $departments = $this->departmentModel->all();
+        $data = [
+            'title' => 'Create User',
+            'departments' => $departments,
+            'csrf_token' => $this->generateCsrf()
+        ];
+
+        $this->render('admin/create-user', $data, 'admin-layout');
+    }
+
+    /**
+     * Edit User
+     */
+    public function editUser($id) {
+        $user = $this->userModel->find($id);
         
-        try {
-            $data = $this->getPostData();
-            
-            // Validate required fields
-            $errors = $this->validateRequired($data, ['name', 'email', 'specialization', 'department_id']);
-            
-            if (!empty($errors)) {
-                $this->setFlash('error', implode('<br>', $errors));
-                $this->redirect('/admin/manage-doctors');
+        if (!$user) {
+            $this->setFlash('User not found', 'error');
+            $this->redirect('admin/users');
+            return;
+        }
+
+        if ($this->isPost()) {
+            // Validate CSRF token
+            $csrfToken = $this->post('csrf_token');
+            if (!$this->validateCsrf($csrfToken)) {
+                $this->setFlash('Invalid security token. Please try again.', 'error');
+                $this->redirect('admin/users/edit/' . $id);
                 return;
             }
-            
-            // Validate email
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $this->setFlash('error', 'Invalid email format');
-                $this->redirect('/admin/manage-doctors');
-                return;
-            }
-            
-            // Check if email exists for another user
-            $existingUser = $this->userModel->findByEmail($data['email']);
-            if ($existingUser && $existingUser['id'] != $id) {
-                $this->setFlash('error', 'Email already exists for another user');
-                $this->redirect('/admin/manage-doctors');
-                return;
-            }
-            
-            // Update user data
-            $userData = [
-                'name' => $data['name'],
-                'email' => $data['email']
+
+            $data = [
+                'full_name' => $this->post('full_name'),
+                'phone' => $this->post('phone'),
+                'address' => $this->post('address'),
+                'is_active' => $this->post('is_active') ? 1 : 0
             ];
-            
-            // Update password if provided
-            if (!empty($data['password'])) {
-                if ($data['password'] !== $data['confirm_password']) {
-                    $this->setFlash('error', 'Passwords do not match');
-                    $this->redirect('/admin/manage-doctors');
+
+            // Check if email is being changed
+            $email = $this->post('email');
+            if ($email !== $user['email']) {
+                if ($this->userModel->findByEmail($email)) {
+                    $this->setFlash('Email already exists', 'error');
+                    $this->redirect('admin/users/edit/' . $id);
                     return;
                 }
-                
-                $userData['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+                $data['email'] = $email;
             }
-            
-            // Update doctor data
-            $doctorData = [
-                'specialization' => $data['specialization'],
-                'qualification' => $data['qualification'] ?? '',
-                'experience' => $data['experience'] ?? 0,
-                'department_id' => $data['department_id'],
-                'available_days' => $data['available_days'] ?? 'Monday,Tuesday,Wednesday,Thursday,Friday',
-                'available_time_start' => $data['available_time_start'] ?? '09:00:00',
-                'available_time_end' => $data['available_time_end'] ?? '17:00:00'
-            ];
-            
-            // Update doctor
-            $result = $this->doctorModel->updateDoctor($id, $userData, $doctorData);
-            
-            if ($result) {
-                $this->setFlash('success', 'Doctor updated successfully!');
-                
-                // Log the action
-                $this->logAction('update_doctor', "Updated doctor ID: {$id}");
-            } else {
-                $this->setFlash('error', 'Failed to update doctor');
-            }
-            
-            $this->redirect('/admin/manage-doctors');
-            
-        } catch (Exception $e) {
-            error_log("Update Doctor Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error updating doctor: ' . $e->getMessage());
-            $this->redirect('/admin/manage-doctors');
-        }
-    }
-    
-    /**
-     * Delete doctor
-     * @param int $id Doctor ID
-     */
-    public function deleteDoctor($id)
-    {
-        try {
-            // Check if doctor exists
-            $doctor = $this->doctorModel->find($id);
-            if (!$doctor) {
-                $this->setFlash('error', 'Doctor not found');
-                $this->redirect('/admin/manage-doctors');
-                return;
-            }
-            
-            // Delete doctor
-            $result = $this->doctorModel->deleteDoctor($id);
-            
-            if ($result) {
-                $this->setFlash('success', 'Doctor deleted successfully!');
-                
-                // Log the action
-                $this->logAction('delete_doctor', "Deleted doctor ID: {$id}, Email: {$doctor['email']}");
-            } else {
-                $this->setFlash('error', 'Failed to delete doctor');
-            }
-            
-            $this->redirect('/admin/manage-doctors');
-            
-        } catch (Exception $e) {
-            error_log("Delete Doctor Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error deleting doctor: ' . $e->getMessage());
-            $this->redirect('/admin/manage-doctors');
-        }
-    }
-    
-    /**
-     * ========================================
-     * PATIENT MANAGEMENT METHODS
-     * ========================================
-     */
-    
-    /**
-     * Manage Patients - List all patients
-     */
-    public function managePatients()
-    {
-        try {
-            // Get all patients with details
-            $patients = $this->patientModel->getAllPatients();
-            
-            $data = [
-                'patients' => $patients,
-                'pageTitle' => 'Manage Patients',
-                'currentPage' => 'patients'
-            ];
-            
-            $this->view('admin/manage_patients', $data);
-            
-        } catch (Exception $e) {
-            error_log("Manage Patients Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error loading patients: ' . $e->getMessage());
-            $this->redirect('/admin/dashboard');
-        }
-    }
-    
-    /**
-     * Add new patient
-     */
-    public function addPatient()
-    {
-        if (!$this->isPost()) {
-            $this->redirect('/admin/manage-patients');
-            return;
-        }
-        
-        try {
-            $data = $this->getPostData();
-            
-            // Validate required fields
-            $errors = $this->validateRequired($data, ['name', 'email', 'password', 'confirm_password', 'phone']);
-            
-            if (!empty($errors)) {
-                $this->setFlash('error', implode('<br>', $errors));
-                $this->redirect('/admin/manage-patients');
-                return;
-            }
-            
-            // Validate email
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $this->setFlash('error', 'Invalid email format');
-                $this->redirect('/admin/manage-patients');
-                return;
-            }
-            
-            // Check passwords match
-            if ($data['password'] !== $data['confirm_password']) {
-                $this->setFlash('error', 'Passwords do not match');
-                $this->redirect('/admin/manage-patients');
-                return;
-            }
-            
-            // Check if email exists
-            $existingUser = $this->userModel->findByEmail($data['email']);
-            if ($existingUser) {
-                $this->setFlash('error', 'Email already exists');
-                $this->redirect('/admin/manage-patients');
-                return;
-            }
-            
-            // Prepare data for factory
-            $userData = [
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => $data['password'],
-                'role' => 'patient',
-                'phone' => $data['phone'],
-                'gender' => $data['gender'] ?? '',
-                'date_of_birth' => $data['date_of_birth'] ?? null,
-                'address' => $data['address'] ?? '',
-                'blood_group' => $data['blood_group'] ?? '',
-                'emergency_contact' => $data['emergency_contact'] ?? '',
-                'emergency_name' => $data['emergency_name'] ?? ''
-            ];
-            
-            // Create patient using factory
-            $result = $this->userFactory->create($userData);
-            
-            if ($result) {
-                $this->setFlash('success', 'Patient added successfully!');
-                
-                // Log the action
-                $this->logAction('add_patient', "Added patient: {$data['email']}");
-            } else {
-                $this->setFlash('error', 'Failed to add patient');
-            }
-            
-            $this->redirect('/admin/manage-patients');
-            
-        } catch (Exception $e) {
-            error_log("Add Patient Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error adding patient: ' . $e->getMessage());
-            $this->redirect('/admin/manage-patients');
-        }
-    }
-    
-    /**
-     * Update patient
-     * @param int $id Patient ID
-     */
-    public function updatePatient($id)
-    {
-        if (!$this->isPost()) {
-            $this->redirect('/admin/manage-patients');
-            return;
-        }
-        
-        try {
-            $data = $this->getPostData();
-            
-            // Validate required fields
-            $errors = $this->validateRequired($data, ['name', 'email', 'phone']);
-            
-            if (!empty($errors)) {
-                $this->setFlash('error', implode('<br>', $errors));
-                $this->redirect('/admin/manage-patients');
-                return;
-            }
-            
-            // Validate email
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $this->setFlash('error', 'Invalid email format');
-                $this->redirect('/admin/manage-patients');
-                return;
-            }
-            
-            // Check if email exists for another user
-            $existingUser = $this->userModel->findByEmail($data['email']);
-            if ($existingUser && $existingUser['id'] != $id) {
-                $this->setFlash('error', 'Email already exists for another user');
-                $this->redirect('/admin/manage-patients');
-                return;
-            }
-            
-            // Prepare update data
-            $userData = [
-                'name' => $data['name'],
-                'email' => $data['email']
-            ];
-            
-            // Update password if provided
-            if (!empty($data['password'])) {
-                if ($data['password'] !== $data['confirm_password']) {
-                    $this->setFlash('error', 'Passwords do not match');
-                    $this->redirect('/admin/manage-patients');
+
+            // Check if username is being changed
+            $username = $this->post('username');
+            if ($username !== $user['username']) {
+                if ($this->userModel->findByUsername($username)) {
+                    $this->setFlash('Username already exists', 'error');
+                    $this->redirect('admin/users/edit/' . $id);
                     return;
                 }
-                
-                $userData['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+                $data['username'] = $username;
             }
-            
-            $patientData = [
-                'phone' => $data['phone'],
-                'gender' => $data['gender'] ?? '',
-                'date_of_birth' => $data['date_of_birth'] ?? null,
-                'address' => $data['address'] ?? '',
-                'blood_group' => $data['blood_group'] ?? '',
-                'emergency_contact' => $data['emergency_contact'] ?? '',
-                'emergency_name' => $data['emergency_name'] ?? ''
-            ];
-            
-            // Update patient
-            $result = $this->patientModel->updatePatient($id, $userData, $patientData);
-            
+
+            $result = $this->userModel->update($id, $data);
+
             if ($result) {
-                $this->setFlash('success', 'Patient updated successfully!');
-                
-                // Log the action
-                $this->logAction('update_patient', "Updated patient ID: {$id}");
+                // Update role-specific data
+                if ($user['role'] === 'doctor') {
+                    $doctor = $this->doctorModel->getByUserId($id);
+                    if ($doctor) {
+                        $doctorData = [
+                            'specialization' => $this->post('specialization'),
+                            'qualification' => $this->post('qualification'),
+                            'experience_years' => (int)$this->post('experience_years'),
+                            'license_number' => $this->post('license_number'),
+                            'department_id' => $this->post('department_id') ?: null
+                        ];
+                        $this->doctorModel->update($doctor['id'], $doctorData);
+                    }
+                } elseif ($user['role'] === 'patient') {
+                    $patient = $this->patientModel->getByUserId($id);
+                    if ($patient) {
+                        $patientData = [
+                            'date_of_birth' => $this->post('date_of_birth'),
+                            'gender' => $this->post('gender'),
+                            'blood_group' => $this->post('blood_group'),
+                            'emergency_contact_name' => $this->post('emergency_contact_name'),
+                            'emergency_contact_phone' => $this->post('emergency_contact_phone'),
+                            'allergies' => $this->post('allergies'),
+                            'chronic_conditions' => $this->post('chronic_conditions')
+                        ];
+                        $this->patientModel->update($patient['id'], $patientData);
+                    }
+                }
+
+                $this->logActivity('update_user', 'users', $id);
+                $this->setFlash('User updated successfully', 'success');
+                $this->redirect('admin/users');
             } else {
-                $this->setFlash('error', 'Failed to update patient');
+                $this->setFlash('Failed to update user', 'error');
+                $this->redirect('admin/users/edit/' . $id);
             }
-            
-            $this->redirect('/admin/manage-patients');
-            
-        } catch (Exception $e) {
-            error_log("Update Patient Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error updating patient: ' . $e->getMessage());
-            $this->redirect('/admin/manage-patients');
-        }
-    }
-    
-    /**
-     * Delete patient
-     * @param int $id Patient ID
-     */
-    public function deletePatient($id)
-    {
-        try {
-            // Check if patient exists
-            $patient = $this->patientModel->find($id);
-            if (!$patient) {
-                $this->setFlash('error', 'Patient not found');
-                $this->redirect('/admin/manage-patients');
-                return;
-            }
-            
-            // Delete patient
-            $result = $this->patientModel->deletePatient($id);
-            
-            if ($result) {
-                $this->setFlash('success', 'Patient deleted successfully!');
-                
-                // Log the action
-                $this->logAction('delete_patient', "Deleted patient ID: {$id}, Email: {$patient['email']}");
-            } else {
-                $this->setFlash('error', 'Failed to delete patient');
-            }
-            
-            $this->redirect('/admin/manage-patients');
-            
-        } catch (Exception $e) {
-            error_log("Delete Patient Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error deleting patient: ' . $e->getMessage());
-            $this->redirect('/admin/manage-patients');
-        }
-    }
-    
-    /**
-     * ========================================
-     * DEPARTMENT MANAGEMENT METHODS
-     * ========================================
-     */
-    
-    /**
-     * Manage Departments
-     */
-    public function manageDepartments()
-    {
-        try {
-            // Get all departments
-            $departments = $this->departmentModel->all();
-            
-            $data = [
-                'departments' => $departments,
-                'pageTitle' => 'Manage Departments',
-                'currentPage' => 'departments'
-            ];
-            
-            $this->view('admin/manage_departments', $data);
-            
-        } catch (Exception $e) {
-            error_log("Manage Departments Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error loading departments: ' . $e->getMessage());
-            $this->redirect('/admin/dashboard');
-        }
-    }
-    
-    /**
-     * Add department
-     */
-    public function addDepartment()
-    {
-        if (!$this->isPost()) {
-            $this->redirect('/admin/manage-departments');
             return;
         }
-        
-        try {
-            $data = $this->getPostData();
-            
-            // Validate required fields
-            if (empty($data['name'])) {
-                $this->setFlash('error', 'Department name is required');
-                $this->redirect('/admin/manage-departments');
-                return;
-            }
-            
-            // Check if department exists
-            $existing = $this->departmentModel->findByName($data['name']);
-            if ($existing) {
-                $this->setFlash('error', 'Department already exists');
-                $this->redirect('/admin/manage-departments');
-                return;
-            }
-            
-            // Create department
-            $result = $this->departmentModel->create([
-                'name' => $data['name'],
-                'description' => $data['description'] ?? ''
-            ]);
-            
-            if ($result) {
-                $this->setFlash('success', 'Department added successfully!');
-                
-                // Log the action
-                $this->logAction('add_department', "Added department: {$data['name']}");
-            } else {
-                $this->setFlash('error', 'Failed to add department');
-            }
-            
-            $this->redirect('/admin/manage-departments');
-            
-        } catch (Exception $e) {
-            error_log("Add Department Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error adding department: ' . $e->getMessage());
-            $this->redirect('/admin/manage-departments');
+
+        // Get role-specific details
+        $details = null;
+        if ($user['role'] === 'doctor') {
+            $details = $this->doctorModel->getByUserId($id);
+        } elseif ($user['role'] === 'patient') {
+            $details = $this->patientModel->getByUserId($id);
         }
+
+        // Get departments for doctor
+        $departments = $this->departmentModel->all();
+
+        $data = [
+            'title' => 'Edit User',
+            'user' => $user,
+            'details' => $details,
+            'departments' => $departments,
+            'csrf_token' => $this->generateCsrf()
+        ];
+
+        $this->render('admin/edit-user', $data, 'admin-layout');
     }
-    
+
     /**
-     * Update department
-     * @param int $id Department ID
+     * Delete User
      */
-    public function updateDepartment($id)
-    {
+    public function deleteUser($id) {
         if (!$this->isPost()) {
-            $this->redirect('/admin/manage-departments');
+            $this->redirect('admin/users');
             return;
         }
+
+        // Validate CSRF token
+        if (!$this->validateCsrf($this->post('csrf_token'))) {
+            $this->setFlash('Invalid security token', 'error');
+            $this->redirect('admin/users');
+            return;
+        }
+
+        $user = $this->userModel->find($id);
         
-        try {
-            $data = $this->getPostData();
-            
-            // Validate required fields
-            if (empty($data['name'])) {
-                $this->setFlash('error', 'Department name is required');
-                $this->redirect('/admin/manage-departments');
-                return;
-            }
-            
-            // Check if name exists for another department
-            $existing = $this->departmentModel->findByName($data['name']);
-            if ($existing && $existing['id'] != $id) {
-                $this->setFlash('error', 'Department name already exists');
-                $this->redirect('/admin/manage-departments');
-                return;
-            }
-            
-            // Update department
-            $result = $this->departmentModel->update($id, [
-                'name' => $data['name'],
-                'description' => $data['description'] ?? ''
-            ]);
-            
-            if ($result) {
-                $this->setFlash('success', 'Department updated successfully!');
-                
-                // Log the action
-                $this->logAction('update_department', "Updated department ID: {$id}");
-            } else {
-                $this->setFlash('error', 'Failed to update department');
-            }
-            
-            $this->redirect('/admin/manage-departments');
-            
-        } catch (Exception $e) {
-            error_log("Update Department Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error updating department: ' . $e->getMessage());
-            $this->redirect('/admin/manage-departments');
+        if (!$user) {
+            $this->setFlash('User not found', 'error');
+            $this->redirect('admin/users');
+            return;
         }
+
+        // Don't allow deleting own account
+        if ($id == $this->getCurrentUserId()) {
+            $this->setFlash('You cannot delete your own account', 'error');
+            $this->redirect('admin/users');
+            return;
+        }
+
+        $result = $this->userModel->delete($id);
+
+        if ($result) {
+            $this->logActivity('delete_user', 'users', $id);
+            $this->setFlash('User deleted successfully', 'success');
+        } else {
+            $this->setFlash('Failed to delete user', 'error');
+        }
+
+        $this->redirect('admin/users');
+    }
+
+    /**
+     * Toggle User Status
+     */
+    public function toggleUserStatus($id) {
+        if (!$this->isPost()) {
+            $this->redirect('admin/users');
+            return;
+        }
+
+        // Validate CSRF token
+        if (!$this->validateCsrf($this->post('csrf_token'))) {
+            $this->setFlash('Invalid security token', 'error');
+            $this->redirect('admin/users');
+            return;
+        }
+
+        $user = $this->userModel->find($id);
+        
+        if (!$user) {
+            $this->setFlash('User not found', 'error');
+            $this->redirect('admin/users');
+            return;
+        }
+
+        // Don't allow toggling own status
+        if ($id == $this->getCurrentUserId()) {
+            $this->setFlash('You cannot change your own status', 'error');
+            $this->redirect('admin/users');
+            return;
+        }
+
+        $result = $this->userModel->toggleStatus($id);
+
+        if ($result) {
+            $this->logActivity('toggle_user_status', 'users', $id);
+            $this->setFlash('User status updated successfully', 'success');
+        } else {
+            $this->setFlash('Failed to update user status', 'error');
+        }
+
+        $this->redirect('admin/users');
+    }
+
+    /**
+     * Doctor Management - FIXED VERSION
+     */
+    public function doctors() {
+        // Method 1: Try to get doctors from UserModel
+        $doctors = $this->userModel->getAllDoctors();
+        
+        // If empty, try direct database query
+        if (empty($doctors)) {
+            $sql = "SELECT u.*, d.*, dep.department_name 
+                    FROM users u 
+                    LEFT JOIN doctors d ON u.id = d.user_id 
+                    LEFT JOIN departments dep ON d.department_id = dep.id
+                    WHERE u.role = 'doctor'";
+            $doctors = $this->db->fetchAll($sql);
+        }
+        
+        // If still empty, get at least the users with doctor role
+        if (empty($doctors)) {
+            $sql = "SELECT * FROM users WHERE role = 'doctor'";
+            $doctorUsers = $this->db->fetchAll($sql);
+            
+            foreach ($doctorUsers as $user) {
+                $doctors[] = [
+                    'id' => $user['id'],
+                    'user_id' => $user['id'],
+                    'full_name' => $user['full_name'],
+                    'email' => $user['email'],
+                    'phone' => $user['phone'],
+                    'profile_image' => $user['profile_image'],
+                    'specialization' => 'General Physician',
+                    'department_name' => 'Not Assigned',
+                    'is_available' => 1
+                ];
+            }
+        }
+        
+        $data = [
+            'title' => 'Doctor Management',
+            'doctors' => $doctors
+        ];
+
+        $this->render('admin/doctors', $data, 'admin-layout');
+    }
+    /**
+ * View Doctor Schedule
+ */
+public function doctorSchedule($id) {
+    $doctor = $this->userModel->find($id);
+    
+    if (!$doctor || $doctor['role'] !== 'doctor') {
+        $this->setFlash('Doctor not found', 'error');
+        $this->redirect('admin/doctors');
+        return;
     }
     
-    /**
-     * Delete department
-     * @param int $id Department ID
-     */
-    public function deleteDepartment($id)
-    {
-        try {
-            // Check if department has doctors
-            $doctorCount = $this->doctorModel->countByDepartment($id);
-            if ($doctorCount > 0) {
-                $this->setFlash('error', "Cannot delete department with {$doctorCount} doctors assigned");
-                $this->redirect('/admin/manage-departments');
-                return;
-            }
-            
-            // Delete department
-            $result = $this->departmentModel->delete($id);
-            
-            if ($result) {
-                $this->setFlash('success', 'Department deleted successfully!');
-                
-                // Log the action
-                $this->logAction('delete_department', "Deleted department ID: {$id}");
-            } else {
-                $this->setFlash('error', 'Failed to delete department');
-            }
-            
-            $this->redirect('/admin/manage-departments');
-            
-        } catch (Exception $e) {
-            error_log("Delete Department Error: " . $e->getMessage());
-            $this->setFlash('error', 'Error deleting department: ' . $e->getMessage());
-            $this->redirect('/admin/manage-departments');
-        }
+    $doctorDetails = $this->doctorModel->getByUserId($id);
+    
+    $data = [
+        'title' => 'Doctor Schedule',
+        'doctor' => $doctor,
+        'schedule' => $doctorDetails
+    ];
+    
+    $this->render('admin/doctor-schedule', $data, 'admin-layout');
+}
+
+/**
+ * View Doctor Appointments
+ */
+public function doctorAppointments($id) {
+    $doctor = $this->userModel->find($id);
+    
+    if (!$doctor || $doctor['role'] !== 'doctor') {
+        $this->setFlash('Doctor not found', 'error');
+        $this->redirect('admin/doctors');
+        return;
     }
     
-    /**
-     * ========================================
-     * APPOINTMENT MANAGEMENT METHODS
-     * ========================================
-     */
+    $appointments = $this->appointmentModel->getByDoctorId($id);
     
+    $data = [
+        'title' => 'Doctor Appointments',
+        'doctor' => $doctor,
+        'appointments' => $appointments
+    ];
+    
+    $this->render('admin/doctor-appointments', $data, 'admin-layout');
+}
+
+/**
+ * Delete Doctor
+ */
+public function deleteDoctor($id) {
+    if (!$this->isPost()) {
+        $this->redirect('admin/doctors');
+        return;
+    }
+
+    if (!$this->validateCsrf($this->post('csrf_token'))) {
+        $this->setFlash('Invalid security token', 'error');
+        $this->redirect('admin/doctors');
+        return;
+    }
+
+    $doctor = $this->userModel->find($id);
+    
+    if (!$doctor || $doctor['role'] !== 'doctor') {
+        $this->setFlash('Doctor not found', 'error');
+        $this->redirect('admin/doctors');
+        return;
+    }
+
+    if ($id == $this->getCurrentUserId()) {
+        $this->setFlash('You cannot delete your own account', 'error');
+        $this->redirect('admin/doctors');
+        return;
+    }
+
+    $this->db->beginTransaction();
+    
+    try {
+        $doctorRecord = $this->doctorModel->getByUserId($id);
+        if ($doctorRecord) {
+            $this->doctorModel->delete($doctorRecord['id']);
+        }
+        $this->userModel->delete($id);
+        $this->db->commit();
+        $this->setFlash('Doctor deleted successfully', 'success');
+    } catch (Exception $e) {
+        $this->db->rollback();
+        $this->setFlash('Failed to delete doctor', 'error');
+    }
+
+    $this->redirect('admin/doctors');
+}
     /**
-     * Manage Appointments
+     * Patient Management
      */
-    public function manageAppointments()
-    {
-        try {
-            // Get filters
-            $filters = [
-                'date' => $_GET['date'] ?? null,
-                'status' => $_GET['status'] ?? null,
-                'doctor_id' => $_GET['doctor_id'] ?? null,
-                'patient_id' => $_GET['patient_id'] ?? null
+    public function patients() {
+        $page = (int)($this->get('page', 1));
+        $search = $this->get('search');
+        
+        if ($search) {
+            $patients = $this->patientModel->search($search);
+            $total = count($patients);
+            $pagination = $this->getPaginationData($total, $page, 10);
+            $patients = array_slice($patients, $pagination['offset'], $pagination['per_page']);
+        } else {
+            $result = $this->patientModel->paginate($page, 10);
+            $patients = $result['data'] ?? [];
+            $pagination = [
+                'total' => $result['total'] ?? 0,
+                'page' => $page,
+                'per_page' => 10,
+                'total_pages' => $result['total_pages'] ?? 1,
+                'has_previous' => $page > 1,
+                'has_next' => $page < ($result['total_pages'] ?? 1),
+                'previous_page' => $page - 1,
+                'next_page' => $page + 1,
+                'offset' => ($page - 1) * 10
             ];
-            
-            // Get appointments with filters
-            $appointments = $this->appointmentModel->getAppointmentsWithDetails($filters);
-            
-            // Get doctors for filter dropdown
-            $doctors = $this->doctorModel->getAllDoctors();
-            
+        }
+
+        $data = [
+            'title' => 'Patient Management',
+            'patients' => $patients,
+            'pagination' => $pagination,
+            'search' => $search
+        ];
+
+        $this->render('admin/patients', $data, 'admin-layout');
+    }
+
+    /**
+     * View Patient Details
+     */
+    public function viewPatient($id) {
+        $patient = $this->patientModel->getPatientWithDetails($id);
+        
+        if (!$patient) {
+            $this->setFlash('Patient not found', 'error');
+            $this->redirect('admin/patients');
+            return;
+        }
+
+        $appointments = $this->patientModel->getAppointments($id);
+        $medicalHistory = $this->patientModel->getMedicalHistory($id);
+        $prescriptions = $this->patientModel->getPrescriptions($id);
+
+        $data = [
+            'title' => 'Patient Details',
+            'patient' => $patient,
+            'appointments' => $appointments,
+            'medical_history' => $medicalHistory,
+            'prescriptions' => $prescriptions
+        ];
+
+        $this->render('admin/view-patient', $data, 'admin-layout');
+    }
+
+    /**
+     * Department Management
+     */
+    public function departments() {
+        $departments = $this->departmentModel->getWithHeadDoctor();
+        
+        $data = [
+            'title' => 'Department Management',
+            'departments' => $departments
+        ];
+
+        $this->render('admin/departments', $data, 'admin-layout');
+    }
+
+    /**
+     * Create Department
+     */
+    public function createDepartment() {
+        if ($this->isPost()) {
+            // Validate CSRF token
+            if (!$this->validateCsrf($this->post('csrf_token'))) {
+                $this->setFlash('Invalid security token', 'error');
+                $this->redirect('admin/departments/create');
+                return;
+            }
+
             $data = [
-                'appointments' => $appointments,
-                'doctors' => $doctors,
-                'filters' => $filters,
-                'pageTitle' => 'Manage Appointments',
-                'currentPage' => 'appointments'
+                'department_name' => $this->post('department_name'),
+                'description' => $this->post('description'),
+                'floor_number' => $this->post('floor_number'),
+                'extension_number' => $this->post('extension_number'),
+                'head_doctor_id' => $this->post('head_doctor_id') ?: null,
+                'is_active' => 1
             ];
+
+            $result = $this->departmentModel->create($data);
+
+            if ($result) {
+                $this->logActivity('create_department', 'departments', $result);
+                $this->setFlash('Department created successfully', 'success');
+                $this->redirect('admin/departments');
+            } else {
+                $this->setFlash('Failed to create department', 'error');
+                $this->redirect('admin/departments/create');
+            }
+            return;
+        }
+
+        // Get doctors for head doctor selection
+        $doctors = $this->userModel->getAllDoctors();
+
+        $data = [
+            'title' => 'Create Department',
+            'doctors' => $doctors,
+            'csrf_token' => $this->generateCsrf()
+        ];
+
+        $this->render('admin/create-department', $data, 'admin-layout');
+    }
+
+    /**
+     * Edit Department
+     */
+    public function editDepartment($id) {
+        $department = $this->departmentModel->find($id);
+        
+        if (!$department) {
+            $this->setFlash('Department not found', 'error');
+            $this->redirect('admin/departments');
+            return;
+        }
+
+        if ($this->isPost()) {
+            // Validate CSRF token
+            if (!$this->validateCsrf($this->post('csrf_token'))) {
+                $this->setFlash('Invalid security token', 'error');
+                $this->redirect('admin/departments/edit/' . $id);
+                return;
+            }
+
+            $data = [
+                'department_name' => $this->post('department_name'),
+                'description' => $this->post('description'),
+                'floor_number' => $this->post('floor_number'),
+                'extension_number' => $this->post('extension_number'),
+                'head_doctor_id' => $this->post('head_doctor_id') ?: null,
+                'is_active' => $this->post('is_active') ? 1 : 0
+            ];
+
+            $result = $this->departmentModel->update($id, $data);
+
+            if ($result) {
+                $this->logActivity('update_department', 'departments', $id);
+                $this->setFlash('Department updated successfully', 'success');
+                $this->redirect('admin/departments');
+            } else {
+                $this->setFlash('Failed to update department', 'error');
+                $this->redirect('admin/departments/edit/' . $id);
+            }
+            return;
+        }
+
+        // Get doctors for head doctor selection
+        $doctors = $this->userModel->getAllDoctors();
+
+        $data = [
+            'title' => 'Edit Department',
+            'department' => $department,
+            'doctors' => $doctors,
+            'csrf_token' => $this->generateCsrf()
+        ];
+
+        $this->render('admin/edit-department', $data, 'admin-layout');
+    }
+
+    /**
+     * Delete Department
+     */
+    public function deleteDepartment($id) {
+        if (!$this->isPost()) {
+            $this->redirect('admin/departments');
+            return;
+        }
+
+        // Validate CSRF token
+        if (!$this->validateCsrf($this->post('csrf_token'))) {
+            $this->setFlash('Invalid security token', 'error');
+            $this->redirect('admin/departments');
+            return;
+        }
+
+        $department = $this->departmentModel->find($id);
+        
+        if (!$department) {
+            $this->setFlash('Department not found', 'error');
+            $this->redirect('admin/departments');
+            return;
+        }
+
+        // Check if department has doctors
+        $doctorCount = $this->doctorModel->count('department_id = ?', [$id]);
+        if ($doctorCount > 0) {
+            $this->setFlash('Cannot delete department with assigned doctors', 'error');
+            $this->redirect('admin/departments');
+            return;
+        }
+
+        $result = $this->departmentModel->delete($id);
+
+        if ($result) {
+            $this->logActivity('delete_department', 'departments', $id);
+            $this->setFlash('Department deleted successfully', 'success');
+        } else {
+            $this->setFlash('Failed to delete department', 'error');
+        }
+
+        $this->redirect('admin/departments');
+    }
+
+    /**
+     * Appointment Management
+     */
+    public function appointments() {
+        $date = $this->get('date', date('Y-m-d'));
+        $status = $this->get('status');
+        $doctorId = $this->get('doctor_id') ? (int)$this->get('doctor_id') : null;
+        
+        $appointments = $this->appointmentModel->getByDateRange($date, $date, $doctorId);
+        
+        if ($status) {
+            $filtered = [];
+            foreach ($appointments as $appointment) {
+                if ($appointment['status'] == $status) {
+                    $filtered[] = $appointment;
+                }
+            }
+            $appointments = $filtered;
+        }
+
+        // Get doctors for filter
+        $doctors = $this->userModel->getAllDoctors();
+
+        $data = [
+            'title' => 'Appointment Management',
+            'appointments' => $appointments,
+            'selected_date' => $date,
+            'selected_status' => $status,
+            'selected_doctor' => $doctorId,
+            'doctors' => $doctors
+        ];
+
+        $this->render('admin/appointments', $data, 'admin-layout');
+    }
+
+    /**
+     * View Appointment Details
+     */
+    public function viewAppointment($id) {
+        $appointment = $this->appointmentModel->getAppointmentWithDetails($id);
+        
+        if (!$appointment) {
+            $this->setFlash('Appointment not found', 'error');
+            $this->redirect('admin/appointments');
+            return;
+        }
+
+        $data = [
+            'title' => 'Appointment Details',
+            'appointment' => $appointment
+        ];
+
+        $this->render('admin/view-appointment', $data, 'admin-layout');
+    }
+
+    /**
+     * Cancel Appointment
+     */
+    public function cancelAppointment($id) {
+        if (!$this->isPost()) {
+            $this->redirect('admin/appointments');
+            return;
+        }
+
+        // Validate CSRF token
+        if (!$this->validateCsrf($this->post('csrf_token'))) {
+            $this->setFlash('Invalid security token', 'error');
+            $this->redirect('admin/appointments');
+            return;
+        }
+
+        $appointment = $this->appointmentModel->find($id);
+        
+        if (!$appointment) {
+            $this->setFlash('Appointment not found', 'error');
+            $this->redirect('admin/appointments');
+            return;
+        }
+
+        $reason = $this->post('cancellation_reason');
+        $result = $this->appointmentModel->cancel($id, $this->getCurrentUserId(), $reason);
+
+        if ($result) {
+            $this->logActivity('cancel_appointment', 'appointments', $id);
+            $this->setFlash('Appointment cancelled successfully', 'success');
+        } else {
+            $this->setFlash('Failed to cancel appointment', 'error');
+        }
+
+        $this->redirect('admin/appointments');
+    }
+
+    /**
+     * Reports
+     */
+    public function reports() {
+        $reportType = $this->get('type', 'appointments');
+        $startDate = $this->get('start_date', date('Y-m-01'));
+        $endDate = $this->get('end_date', date('Y-m-t'));
+        
+        $data = [
+            'title' => 'Reports',
+            'report_type' => $reportType,
+            'start_date' => $startDate,
+            'end_date' => $endDate
+        ];
+
+        switch ($reportType) {
+            case 'appointments':
+                $data['appointments'] = $this->appointmentModel->getByDateRange($startDate, $endDate);
+                $data['stats'] = $this->appointmentModel->getStats($startDate, $endDate);
+                break;
+                
+            case 'patients':
+                $data['patients'] = $this->patientModel->getRecent(100);
+                $data['gender_stats'] = $this->patientModel->countByGender();
+                $data['blood_group_stats'] = $this->patientModel->countByBloodGroup();
+                break;
+                
+            case 'doctors':
+                $data['doctors'] = $this->userModel->getAllDoctors();
+                foreach ($data['doctors'] as &$doctor) {
+                    $doctor['appointment_count'] = $this->appointmentModel->count(
+                        'doctor_id = ? AND appointment_date BETWEEN ? AND ?',
+                        [$doctor['id'], $startDate, $endDate]
+                    );
+                }
+                break;
+        }
+
+        $this->render('admin/reports', $data, 'admin-layout');
+    }
+
+    /**
+     * Export Report
+     */
+    public function exportReport($type) {
+        $startDate = $this->get('start_date', date('Y-m-01'));
+        $endDate = $this->get('end_date', date('Y-m-t'));
+        $format = $this->get('format', 'csv');
+
+        // Generate report data
+        switch ($type) {
+            case 'appointments':
+                $data = $this->appointmentModel->getByDateRange($startDate, $endDate);
+                $filename = "appointments_{$startDate}_to_{$endDate}";
+                break;
+                
+            case 'patients':
+                $data = $this->patientModel->getRecent(1000);
+                $filename = "patients_{$startDate}_to_{$endDate}";
+                break;
+                
+            default:
+                $this->setFlash('Invalid report type', 'error');
+                $this->redirect('admin/reports');
+                return;
+        }
+
+        if ($format === 'csv') {
+            $this->exportToCSV($data, $filename);
+        } else {
+            $this->setFlash('Export format not supported', 'error');
+            $this->redirect('admin/reports');
+        }
+    }
+
+    /**
+     * Export data to CSV
+     */
+    private function exportToCSV($data, $filename) {
+        if (empty($data)) {
+            $this->setFlash('No data to export', 'error');
+            $this->redirect('admin/reports');
+            return;
+        }
+
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '.csv"');
+        
+        $output = fopen('php://output', 'w');
+        
+        // Add headers
+        fputcsv($output, array_keys($data[0]));
+        
+        // Add data
+        foreach ($data as $row) {
+            fputcsv($output, $row);
+        }
+        
+        fclose($output);
+        exit();
+    }
+
+    /**
+     * Settings
+     */
+    public function settings() {
+        if ($this->isPost()) {
+            // Validate CSRF token
+            if (!$this->validateCsrf($this->post('csrf_token'))) {
+                $this->setFlash('Invalid security token', 'error');
+                $this->redirect('admin/settings');
+                return;
+            }
+
+            // Update settings
+            $settings = [
+                'hospital_name' => $this->post('hospital_name'),
+                'address' => $this->post('address'),
+                'phone' => $this->post('phone'),
+                'email' => $this->post('email'),
+                'working_hours' => $this->post('working_hours'),
+                'appointment_duration' => (int)$this->post('appointment_duration'),
+                'max_appointments_per_day' => (int)$this->post('max_appointments_per_day')
+            ];
+
+            foreach ($settings as $key => $value) {
+                $this->settingModel->set($key, $value);
+            }
+
+            $this->setFlash('Settings updated successfully', 'success');
+            $this->redirect('admin/settings');
+            return;
+        }
+
+        // Get current settings
+        $settings = $this->settingModel->getAll();
+
+        $data = [
+            'title' => 'Settings',
+            'settings' => $settings,
+            'csrf_token' => $this->generateCsrf()
+        ];
+
+        $this->render('admin/settings', $data, 'admin-layout');
+    }
+
+    /**
+     * Profile
+     */
+    public function profile() {
+        $user = $this->getCurrentUser();
+        
+        $data = [
+            'title' => 'My Profile',
+            'user' => $user,
+            'csrf_token' => $this->generateCsrf()
+        ];
+
+        $this->render('admin/profile', $data, 'admin-layout');
+    }
+
+    /**
+     * Update Profile
+     */
+    public function updateProfile() {
+        if (!$this->isPost()) {
+            $this->redirect('admin/profile');
+            return;
+        }
+
+        // Validate CSRF token
+        if (!$this->validateCsrf($this->post('csrf_token'))) {
+            $this->setFlash('Invalid security token', 'error');
+            $this->redirect('admin/profile');
+            return;
+        }
+
+        $userId = $this->getCurrentUserId();
+
+        $data = [
+            'full_name' => $this->post('full_name'),
+            'phone' => $this->post('phone'),
+            'address' => $this->post('address')
+        ];
+
+        // Handle profile image upload
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/../uploads/profiles/';
             
-            $this
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            
+            $extension = pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION);
+            $filename = 'user_' . $userId . '_' . time() . '.' . $extension;
+            $uploadFile = $uploadDir . $filename;
+            
+            if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $uploadFile)) {
+                $data['profile_image'] = $filename;
+                
+                // Delete old image
+                $user = $this->userModel->find($userId);
+                if ($user && $user['profile_image'] != 'default-avatar.png') {
+                    $oldFile = $uploadDir . $user['profile_image'];
+                    if (file_exists($oldFile)) {
+                        unlink($oldFile);
+                    }
+                }
+            }
+        }
+
+        $result = $this->userModel->updateProfile($userId, $data);
+
+        if ($result) {
+            $this->setFlash('Profile updated successfully', 'success');
+        } else {
+            $this->setFlash('Failed to update profile', 'error');
+        }
+
+        $this->redirect('admin/profile');
+    }
+
+    /**
+     * Change Password
+     */
+    public function changePassword() {
+        if (!$this->isPost()) {
+            $this->redirect('admin/profile');
+            return;
+        }
+
+        // Validate CSRF token
+        if (!$this->validateCsrf($this->post('csrf_token'))) {
+            $this->setFlash('Invalid security token', 'error');
+            $this->redirect('admin/profile');
+            return;
+        }
+
+        $userId = $this->getCurrentUserId();
+        $currentPassword = $this->post('current_password');
+        $newPassword = $this->post('new_password');
+        $confirmPassword = $this->post('confirm_password');
+
+        // Validate
+        if ($newPassword !== $confirmPassword) {
+            $this->setFlash('New passwords do not match', 'error');
+            $this->redirect('admin/profile');
+            return;
+        }
+
+        if (strlen($newPassword) < 6) {
+            $this->setFlash('Password must be at least 6 characters', 'error');
+            $this->redirect('admin/profile');
+            return;
+        }
+
+        // Verify current password
+        if (!$this->userModel->verifyPassword($userId, $currentPassword)) {
+            $this->setFlash('Current password is incorrect', 'error');
+            $this->redirect('admin/profile');
+            return;
+        }
+
+        // Update password
+        if ($this->userModel->changePassword($userId, $newPassword)) {
+            $this->setFlash('Password changed successfully', 'success');
+        } else {
+            $this->setFlash('Failed to change password', 'error');
+        }
+
+        $this->redirect('admin/profile');
+    }
+}

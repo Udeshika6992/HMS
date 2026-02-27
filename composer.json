@@ -1,0 +1,69 @@
+---
+
+## **📁 composer.json**
+
+```json
+{
+    "name": "hms/hospital-management-system",
+    "description": "A complete web-based Hospital Management System",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Your Name",
+            "email": "your.email@example.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=8.0",
+        "ext-pdo": "*",
+        "ext-mysqli": "*",
+        "ext-gd": "*",
+        "ext-mbstring": "*",
+        "ext-json": "*",
+        "phpmailer/phpmailer": "^6.8",
+        "tecnickcom/tcpdf": "^6.6"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "HMS\\": "src/"
+        },
+        "files": [
+            "includes/functions.php",
+            "includes/validation.php"
+        ]
+    },
+    "scripts": {
+        "test": "phpunit tests",
+        "migrate": "php scripts/migrate.php",
+        "seed": "php scripts/seed.php"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
+    },
+    "keywords": [
+        "hospital",
+        "management",
+        "system",
+        "hms",
+        "php",
+        "mysql",
+        "healthcare"
+    ],
+    "support": {
+        "email": "support@hospital.com",
+        "issues": "https://github.com/yourusername/hms/issues",
+        "source": "https://github.com/yourusername/hms"
+    }
+}

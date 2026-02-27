@@ -1,0 +1,41 @@
+# =====================================================
+# .htaccess - URL Rewriting and Security
+# Hospital Management System
+# =====================================================
+
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Set base directory - CHANGE THIS TO MATCH YOUR FOLDER NAME
+RewriteBase /HMS/
+
+# Redirect to index.php if file/directory doesn't exist
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "\.(sql|log|ini|json)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Compress files
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript
+</IfModule>
+
+# Error pages
+ErrorDocument 404 /HMS/404
+ErrorDocument 403 /HMS/403
+ErrorDocument 500 /HMS/500
