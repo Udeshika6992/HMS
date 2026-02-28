@@ -1,3 +1,27 @@
+php
+<?php
+/**
+ * Create User View
+ * 
+ * @global string $BASE_URL
+ * @global array $departments
+ * @global array $formData
+ */
+
+// Suppress IDE warnings - these variables are passed from controller
+$baseUrl = BASE_URL ?? '/HMS/';
+$depts = $departments ?? [];
+$form_data = $formData ?? [];
+
+// Helper function for this view
+if (!function_exists('asset_url')) {
+    function asset_url($path) {
+        global $baseUrl;
+        return $baseUrl . 'assets/' . ltrim($path, '/');
+    }
+}
+?>
+
 <!-- Page Header -->
 <section class="hero-section">
     <div class="container">

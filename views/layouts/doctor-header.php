@@ -1,3 +1,9 @@
+<?php
+// Include view helpers
+require_once __DIR__ . '/../helpers.php';
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>

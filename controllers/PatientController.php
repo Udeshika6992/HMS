@@ -11,24 +11,39 @@ class PatientController extends Controller {
     private $doctorModel;
     
     public function __construct() {
-        parent::__construct();
-        
-        // Check if user is logged in and is patient
-        if (!$this->isLoggedIn() || $this->getCurrentUserRole() !== 'patient') {
-            $this->setFlash('Please login to access this page', 'error');
-            $this->redirect('login');
-            return;
-        }
-        
-        // Load models
-        require_once 'models/PatientModel.php';
-        require_once 'models/AppointmentModel.php';
-        require_once 'models/DoctorModel.php';
-        
-        $this->patientModel = new PatientModel();
-        $this->appointmentModel = new AppointmentModel();
-        $this->doctorModel = new DoctorModel();
+    parent::__construct();
+    
+    // Check if user is logged in
+    if (!isset($_SESSION['user_id'])) {
+        $_SESSION['error'] = 'Please login to access this page';
+        header('Location: ' . BASE_URL . 'login');
+        exit();
     }
+    
+    // Check if user has patient role
+    if ($_SESSION['user_role'] !== 'patient') {
+        $_SESSION['error'] = 'Access denied. Patient only area.';
+        
+        // Redirect to appropriate dashboard based on role
+        if ($_SESSION['user_role'] === 'admin') {
+            header('Location: ' . BASE_URL . 'admin/dashboard');
+        } elseif ($_SESSION['user_role'] === 'doctor') {
+            header('Location: ' . BASE_URL . 'doctor/dashboard');
+        } else {
+            header('Location: ' . BASE_URL);
+        }
+        exit();
+    }
+    
+    // Load models
+    require_once 'models/PatientModel.php';
+    require_once 'models/AppointmentModel.php';
+    require_once 'models/DoctorModel.php';
+    
+    $this->patientModel = new PatientModel();
+    $this->appointmentModel = new AppointmentModel();
+    $this->doctorModel = new DoctorModel();
+}
 
     /**
      * Patient Dashboard

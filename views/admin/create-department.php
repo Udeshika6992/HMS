@@ -1,15 +1,9 @@
 <?php
 /**
- * Doctor Schedule View
- * Displays doctor's working schedule and availability
+ * Create Department View
  */
-$baseUrl = BASE_URL;
-// Suppress warnings if variables aren't set in IDE
-/* @var string $BASE_URL */
-/* @var array $doctor */
-/* @var array $schedule */
+/* @var array $doctors */
 ?>
-
 
 <!-- Page Header -->
 <section class="hero-section">
@@ -29,6 +23,9 @@ $baseUrl = BASE_URL;
                 </div>
                 <div class="card-body">
                     <form method="POST" action="<?php echo BASE_URL; ?>admin/departments/create">
+                        <!-- IMPORTANT: Add CSRF token field -->
+                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+                        
                         <div class="mb-3">
                             <label for="department_name" class="form-label">Department Name</label>
                             <input type="text" class="form-control" id="department_name" name="department_name" required>

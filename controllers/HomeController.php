@@ -1,56 +1,32 @@
 <?php
 /**
- * Home Controller
- * Handles public pages
- * Location: /controllers/HomeController.php
+ * Home Controller - Public pages
  */
 
 class HomeController extends Controller {
     
-    /**
-     * Home page
-     */
     public function index() {
         $data = [
-            'title' => 'Welcome to Hospital Management System',
-            'message' => 'Your health is our priority'
+            'title' => 'Welcome to ' . APP_NAME
         ];
         
-        $this->render('home/index', $data);
+        // Use public layout (no sidebar)
+        $this->render('home/index', $data, 'public');
     }
     
-    /**
-     * About page
-     */
     public function about() {
         $data = [
-            'title' => 'About Us',
-            'hospital_name' => 'Deltota Divisional Hospital',
-            'established' => '1985',
-            'description' => 'Serving the community for over 35 years with quality healthcare.',
-            'mission' => 'To provide accessible, affordable, and quality healthcare to all members of our community with compassion and respect.',
-            'vision' => 'A healthy community where everyone has access to comprehensive healthcare services.'
+            'title' => 'About Us'
         ];
         
-        $this->render('home/about', $data);
+        $this->render('home/about', $data, 'public');
     }
     
-    /**
-     * Contact page
-     */
     public function contact() {
         $data = [
-            'title' => 'Contact Us',
-            'email' => 'info@deltotahospital.lk',
-            'phone' => '081-1234567',
-            'address' => 'Main Street, Deltota',
-            'working_hours' => [
-                'Monday - Friday' => '8:00 AM - 8:00 PM',
-                'Saturday' => '8:00 AM - 2:00 PM',
-                'Sunday' => 'Emergency Only'
-            ]
+            'title' => 'Contact Us'
         ];
         
-        $this->render('home/contact', $data);
+        $this->render('home/contact', $data, 'public');
     }
 }

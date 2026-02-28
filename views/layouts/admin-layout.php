@@ -1,3 +1,17 @@
+<?php
+/**
+ * Admin Layout
+ * Make sure CSRF token is always available
+ */
+
+// Generate CSRF token if not exists
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Make it available as a variable for easy use
+$csrf_token = $_SESSION['csrf_token'];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,53 +19,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($title) ? $title . ' - ' . APP_NAME : APP_NAME; ?></title>
     
-    <!-- Bootstrap CSS (CDN - Most Reliable) -->
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/style.css">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/admin.css">
-    
-    <style>
-        /* Emergency inline styles in case external CSS fails */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8f9fe;
-        }
-        .page-header {
-            background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%);
-            padding: 3rem 0 6rem;
-            margin-bottom: -3rem;
-            color: white;
-        }
-        .mt--6 {
-            margin-top: -3rem !important;
-        }
-        .card-stats {
-            border: 0;
-            border-radius: 1rem;
-            box-shadow: 0 0 2rem 0 rgba(136,152,170,.15);
-        }
-        .icon-shape {
-            width: 3.5rem;
-            height: 3.5rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-        .bg-gradient-primary { background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%); }
-        .bg-gradient-success { background: linear-gradient(87deg, #2dce89 0, #2dcecc 100%); }
-        .bg-gradient-info { background: linear-gradient(87deg, #11cdef 0, #1171ef 100%); }
-        .bg-gradient-warning { background: linear-gradient(87deg, #fb6340 0, #fbb140 100%); }
-        .text-white { color: #fff !important; }
-    </style>
 </head>
 <body>
     <!-- Top Navigation -->
@@ -96,42 +72,50 @@
                 <div class="position-sticky pt-3">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="<?php echo BASE_URL; ?>admin/dashboard">
+                            <a class="nav-link text-white <?php echo strpos($_SERVER['REQUEST_URI'], 'dashboard') ? 'active' : ''; ?>" 
+                               href="<?php echo BASE_URL; ?>admin/dashboard">
                                 <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="<?php echo BASE_URL; ?>admin/users">
+                            <a class="nav-link text-white <?php echo strpos($_SERVER['REQUEST_URI'], 'users') ? 'active' : ''; ?>" 
+                               href="<?php echo BASE_URL; ?>admin/users">
                                 <i class="fas fa-users me-2"></i>User Management
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white active" href="<?php echo BASE_URL; ?>admin/doctors">
+                            <a class="nav-link text-white <?php echo strpos($_SERVER['REQUEST_URI'], 'doctors') ? 'active' : ''; ?>" 
+                               href="<?php echo BASE_URL; ?>admin/doctors">
                                 <i class="fas fa-user-md me-2"></i>Doctors
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="<?php echo BASE_URL; ?>admin/patients">
+                            <a class="nav-link text-white <?php echo strpos($_SERVER['REQUEST_URI'], 'patients') ? 'active' : ''; ?>" 
+                               href="<?php echo BASE_URL; ?>admin/patients">
                                 <i class="fas fa-procedures me-2"></i>Patients
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="<?php echo BASE_URL; ?>admin/departments">
+                            <a class="nav-link text-white <?php echo strpos($_SERVER['REQUEST_URI'], 'departments') ? 'active' : ''; ?>" 
+                               href="<?php echo BASE_URL; ?>admin/departments">
                                 <i class="fas fa-building me-2"></i>Departments
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="<?php echo BASE_URL; ?>admin/appointments">
+                            <a class="nav-link text-white <?php echo strpos($_SERVER['REQUEST_URI'], 'appointments') ? 'active' : ''; ?>" 
+                               href="<?php echo BASE_URL; ?>admin/appointments">
                                 <i class="fas fa-calendar-check me-2"></i>Appointments
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="<?php echo BASE_URL; ?>admin/reports">
+                            <a class="nav-link text-white <?php echo strpos($_SERVER['REQUEST_URI'], 'reports') ? 'active' : ''; ?>" 
+                               href="<?php echo BASE_URL; ?>admin/reports">
                                 <i class="fas fa-chart-bar me-2"></i>Reports
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="<?php echo BASE_URL; ?>admin/settings">
+                            <a class="nav-link text-white <?php echo strpos($_SERVER['REQUEST_URI'], 'settings') ? 'active' : ''; ?>" 
+                               href="<?php echo BASE_URL; ?>admin/settings">
                                 <i class="fas fa-cog me-2"></i>Settings
                             </a>
                         </li>

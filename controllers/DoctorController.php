@@ -4,7 +4,6 @@
  * Handles all doctor-related operations
  * Location: /controllers/DoctorController.php
  */
-
 class DoctorController extends Controller {
     
     private $doctorModel;

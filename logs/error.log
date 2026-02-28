@@ -436,3 +436,62 @@ Stack trace:
 #5 C:\xampp\htdocs\HMS\index.php(221): Router->dispatch('admin/doctors')
 #6 {main}
   thrown in C:\xampp\htdocs\HMS\views\admin\doctors.php on line 187
+[27-Feb-2026 18:09:59 Europe/Berlin] fetchPaginated Error: SQLSTATE[42S21]: Column already exists: 1060 Duplicate column name 'created_at'
+[27-Feb-2026 18:10:12 Europe/Berlin] fetchPaginated Error: SQLSTATE[42S21]: Column already exists: 1060 Duplicate column name 'created_at'
+[27-Feb-2026 18:10:23 Europe/Berlin] CSRF Error: Token is null or empty
+[27-Feb-2026 18:10:32 Europe/Berlin] CSRF Error: Token is null or empty
+[27-Feb-2026 18:11:09 Europe/Berlin] CSRF Error: Token is null or empty
+[27-Feb-2026 18:13:03 Europe/Berlin] fetchPaginated Error: SQLSTATE[42S21]: Column already exists: 1060 Duplicate column name 'created_at'
+[27-Feb-2026 18:13:08 Europe/Berlin] fetchPaginated Error: SQLSTATE[42S21]: Column already exists: 1060 Duplicate column name 'created_at'
+[27-Feb-2026 18:13:25 Europe/Berlin] CSRF Error: Token is null or empty
+[27-Feb-2026 18:14:40 Europe/Berlin] CSRF Error: Token is null or empty
+[27-Feb-2026 18:19:20 Europe/Berlin] CSRF Error: Token is null or empty
+[27-Feb-2026 18:19:33 Europe/Berlin] CSRF Error: Token is null or empty
+[27-Feb-2026 18:27:32 Europe/Berlin] CSRF Error: Token is null or empty
+[27-Feb-2026 18:27:36 Europe/Berlin] fetchPaginated Error: SQLSTATE[42S21]: Column already exists: 1060 Duplicate column name 'created_at'
+[27-Feb-2026 18:28:29 Europe/Berlin] PHP Warning:  require_once(C:\xampp\htdocs\HMS\views\home/config/config.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\HMS\views\home\index.php on line 11
+[27-Feb-2026 18:28:29 Europe/Berlin] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\HMS\views\home/config/config.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\HMS\views\home\index.php:11
+Stack trace:
+#0 C:\xampp\htdocs\HMS\core\Controller.php(31): require_once()
+#1 C:\xampp\htdocs\HMS\core\Controller.php(40): Controller->view('home/index', Array)
+#2 C:\xampp\htdocs\HMS\controllers\HomeController.php(19): Controller->render('home/index', Array)
+#3 C:\xampp\htdocs\HMS\core\Router.php(140): HomeController->index()
+#4 C:\xampp\htdocs\HMS\core\Router.php(96): Router->callController('HomeController', 'index', Array)
+#5 C:\xampp\htdocs\HMS\index.php(221): Router->dispatch('')
+#6 {main}
+  thrown in C:\xampp\htdocs\HMS\views\home\index.php on line 11
+[27-Feb-2026 18:30:29 Europe/Berlin] PHP Warning:  require_once(C:\xampp\htdocs\HMS\views\home/config/constants.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\HMS\views\home\index.php on line 12
+[27-Feb-2026 18:30:29 Europe/Berlin] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\HMS\views\home/config/constants.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\HMS\views\home\index.php:12
+Stack trace:
+#0 C:\xampp\htdocs\HMS\core\Controller.php(31): require_once()
+#1 C:\xampp\htdocs\HMS\core\Controller.php(40): Controller->view('home/index', Array)
+#2 C:\xampp\htdocs\HMS\controllers\HomeController.php(19): Controller->render('home/index', Array)
+#3 C:\xampp\htdocs\HMS\core\Router.php(140): HomeController->index()
+#4 C:\xampp\htdocs\HMS\core\Router.php(96): Router->callController('HomeController', 'index', Array)
+#5 C:\xampp\htdocs\HMS\index.php(221): Router->dispatch('')
+#6 {main}
+  thrown in C:\xampp\htdocs\HMS\views\home\index.php on line 12
+[27-Feb-2026 18:31:21 Europe/Berlin] PHP Warning:  require_once(C:\xampp\htdocs\HMS\views\home/core/Router.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\HMS\views\home\index.php on line 16
+[27-Feb-2026 18:31:21 Europe/Berlin] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\HMS\views\home/core/Router.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\HMS\views\home\index.php:16
+Stack trace:
+#0 C:\xampp\htdocs\HMS\core\Controller.php(31): require_once()
+#1 C:\xampp\htdocs\HMS\core\Controller.php(40): Controller->view('home/index', Array)
+#2 C:\xampp\htdocs\HMS\controllers\HomeController.php(19): Controller->render('home/index', Array)
+#3 C:\xampp\htdocs\HMS\core\Router.php(140): HomeController->index()
+#4 C:\xampp\htdocs\HMS\core\Router.php(96): Router->callController('HomeController', 'index', Array)
+#5 C:\xampp\htdocs\HMS\index.php(221): Router->dispatch('')
+#6 {main}
+  thrown in C:\xampp\htdocs\HMS\views\home\index.php on line 16
+[27-Feb-2026 18:35:21 Europe/Berlin] CSRF Error: Token is null or empty
+[27-Feb-2026 18:40:55 Europe/Berlin] PHP Warning:  Undefined variable $csrf_token in C:\xampp\htdocs\HMS\views\auth\register.php on line 111
+[27-Feb-2026 18:41:27 Europe/Berlin] New user registered: kumari@gmail.com
+[27-Feb-2026 18:41:42 Europe/Berlin] Login successful: kumari@gmail.com as patient
+[27-Feb-2026 18:41:56 Europe/Berlin] Login successful: kumari@gmail.com as patient
+[27-Feb-2026 18:42:12 Europe/Berlin] Login successful: kumari@gmail.com as patient
+[27-Feb-2026 18:43:35 Europe/Berlin] Login failed: Password mismatch for user - Udeshi
+[27-Feb-2026 18:43:35 Europe/Berlin] Stored password: password123
+[27-Feb-2026 18:43:35 Europe/Berlin] Submitted password: 123456
+[27-Feb-2026 18:44:18 Europe/Berlin] Login successful: kumari@gmail.com as patient
+[27-Feb-2026 18:52:15 Europe/Berlin] Login failed: Password mismatch for user - Udeshi
+[27-Feb-2026 18:52:15 Europe/Berlin] Stored password: password123
+[27-Feb-2026 18:52:15 Europe/Berlin] Submitted password: 1234
