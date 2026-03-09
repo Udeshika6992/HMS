@@ -1,28 +1,28 @@
-# 🏥 Hospital Management System (HMS)
+# Hospital Management System (HMS)
 
 A complete web-based Hospital Management System built with PHP (OOP), MySQL, and Bootstrap. This system manages patients, doctors, appointments, medical records, prescriptions, and more.
 
-## 📋 Features
+## Features
 
-### 👥 User Roles
+### User Roles
 - **Admin**: Full system control, user management, reports
 - **Doctor**: Patient management, appointments, prescriptions, progress tracking
 - **Patient**: Book appointments, view medical history, track health progress
 
-### 🔑 Key Features
-- ✅ User Authentication & Authorization
-- ✅ Role-based Dashboard
-- ✅ Appointment Booking & Management
-- ✅ Medical Records Management
-- ✅ Prescription Management
-- ✅ Patient Progress Tracking
-- ✅ Department Management
-- ✅ Reports Generation
-- ✅ Profile Management
-- ✅ Email Notifications (optional)
-- ✅ PDF Reports (optional)
+### Key Features
+- User Authentication & Authorization
+- Role-based Dashboard
+- Appointment Booking & Management
+- Medical Records Management
+- Prescription Management
+- Patient Progress Tracking
+- Department Management
+- Reports Generation
+- Profile Management
+- Email Notifications (optional)
+- PDF Reports (optional)
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 - **Backend**: PHP 8.2 (Object-Oriented)
 - **Database**: MySQL 8.0 / MariaDB
@@ -31,7 +31,7 @@ A complete web-based Hospital Management System built with PHP (OOP), MySQL, and
 - **Architecture**: MVC Pattern
 - **Design Patterns**: Singleton, Factory, Front Controller
 
-## 📁 Project Structure
+## Project Structure
 HMS/
 ├── assets/ # CSS, JS, images, vendor files
 ├── config/ # Configuration files
@@ -48,7 +48,7 @@ HMS/
 └── lib/ # Third-party libraries
 
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 - PHP 8.0 or higher
