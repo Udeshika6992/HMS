@@ -60,8 +60,8 @@ HMS/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/hms.git
-   cd hms
+   git clone https:https://github.com/Udeshika6992/HMS.git
+  
 
    Configure Database
 
@@ -79,12 +79,8 @@ Update database credentials in config/config.php
 
 Set BASE_URL to your project URL
 
-Set Permissions
 
-bash
-chmod 777 uploads/
-chmod 777 logs/
-Start Server
+
 
 If using XAMPP: Start Apache and MySQL
 
