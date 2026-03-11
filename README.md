@@ -1,6 +1,6 @@
 # Hospital Management System (HMS)
 
-A complete web-based Hospital Management System built with PHP (OOP), MySQL, and Bootstrap. This system manages patients, doctors, appointments, medical records, prescriptions, and more.
+A complete web-based Hospital Digitalization System built with PHP (OOP), MySQL, and Bootstrap. This system manages patients, doctors, appointments, medical records, prescriptions, and more.
 
 ## Features
 
@@ -19,13 +19,13 @@ A complete web-based Hospital Management System built with PHP (OOP), MySQL, and
 - Department Management
 - Reports Generation
 - Profile Management
-- Email Notifications (optional)
-- PDF Reports (optional)
+- Email Notifications
+- PDF Reports 
 
 ## Technologies Used
 
 - **Backend**: PHP 8.2 (Object-Oriented)
-- **Database**: MySQL 8.0 / MariaDB
+- **Database**: MySQL 8.0 
 - **Frontend**: HTML5, CSS3, JavaScript, Bootstrap 5
 - **Libraries**: jQuery, Chart.js, DataTables, Font Awesome
 - **Architecture**: MVC Pattern
@@ -33,19 +33,19 @@ A complete web-based Hospital Management System built with PHP (OOP), MySQL, and
 
 ## Project Structure
 HMS/
-├── assets/ # CSS, JS, images, vendor files
-├── config/ # Configuration files
-├── core/ # Core classes (Router, Controller, Model)
-├── controllers/ # Application controllers
-├── models/ # Database models
-├── views/ # View templates
-├── middleware/ # Authentication middleware
-├── factories/ # Factory classes
-├── includes/ # Helper functions
-├── database/ # SQL migrations and seeds
-├── uploads/ # User uploaded files
-├── logs/ # Application logs
-└── lib/ # Third-party libraries
+assets/  CSS, JS, images, vendor files
+config/  Configuration files
+core/  Core classes (Router, Controller, Model)
+controllers/  Application controllers
+models/  Database models
+views/  View templates
+middleware/  Authentication middleware
+factories/  Factory classes
+includes/  Helper functions
+database/  SQL migrations and seeds
+uploads/  User uploaded files
+logs/  Application logs
+lib/  Third-party libraries
 
 
 ## Installation
@@ -53,13 +53,13 @@ HMS/
 ### Prerequisites
 - PHP 8.0 or higher
 - MySQL 5.7 or higher
-- Apache/Nginx web server
+- Apache web server
 - Composer (optional)
 
 ### Steps
 
 1. **Clone the repository**
-   ```bash
+
    git clone https:https://github.com/Udeshika6992/HMS.git
   
 
